@@ -1,4 +1,4 @@
-/*package com.b8box.service;
+package com.b8box.service;
 
 import com.b8box.config.SpotifyConfig;
 import com.b8box.model.spotify.SpotifyAlbumResponse;
@@ -32,34 +32,34 @@ public class SpotifyService {
      * Obtém o Access Token usando Client Credentials Flow
      * (para operações que não precisam de usuário logado)
      */
-//    public String getAccessToken() {
-//        // Se o token ainda não expirou, usa o que está em cache
-//        if (accessToken != null && System.currentTimeMillis() < tokenExpiryTime) {
-//            return accessToken;
-//        }
+    public String getAccessToken() {
+        // Se o token ainda não expirou, usa o que está em cache
+        if (accessToken != null && System.currentTimeMillis() < tokenExpiryTime) {
+            return accessToken;
+        }
 
-//        String credentials = spotifyConfig.getClientId() + ":" + spotifyConfig.getClientSecret();
-//        String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
+        String credentials = spotifyConfig.getClientId() + ":" + spotifyConfig.getClientSecret();
+        String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
 
-//        SpotifyTokenResponse response = WebClient.create("https://accounts.spotify.com")
-//                .post()
-//                .uri("/api/token")
-//                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedCredentials)
-//                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-//                .bodyValue("grant_type=client_credentials")
-//                .retrieve()
-//                .bodyToMono(SpotifyTokenResponse.class)
-//                .block();
+        SpotifyTokenResponse response = WebClient.create("https://accounts.spotify.com")
+                .post()
+                .uri("/api/token")
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedCredentials)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .bodyValue("grant_type=client_credentials")
+                .retrieve()
+                .bodyToMono(SpotifyTokenResponse.class)
+                .block();
 
-//        if (response != null) {
-//            this.accessToken = response.getAccessToken();
-//            this.tokenExpiryTime = System.currentTimeMillis() + (response.getExpiresIn() * 1000L);
-//            System.out.println("✅ Token Spotify obtido com sucesso!");
-//            return accessToken;
-//        }
+        if (response != null) {
+            this.accessToken = response.getAccessToken();
+            this.tokenExpiryTime = System.currentTimeMillis() + (response.getExpiresIn() * 1000L);
+            System.out.println("✅ Token Spotify obtido com sucesso!");
+            return accessToken;
+        }
 
-//        throw new RuntimeException("❌ Erro ao obter token do Spotify");
-//    }
+        throw new RuntimeException("❌ Erro ao obter token do Spotify");
+    }
 
     // ============================================================
     // BUSCA DE ÁLBUNS
@@ -68,35 +68,35 @@ public class SpotifyService {
     /**
      * Busca álbuns no Spotify por nome
      */
-//    public SpotifyAlbumResponse searchAlbums(String query) {
-//        String token = getAccessToken();
+    public SpotifyAlbumResponse searchAlbums(String query) {
+        String token = getAccessToken();
 
-//        return spotifyWebClient
-//                .get()
-//                .uri(uriBuilder -> uriBuilder
-//                        .path("/search")
-//                        .queryParam("q", query)
-//                        .queryParam("type", "album")
-//                        .queryParam("limit", 10)
-//                        .build())
-//                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-//                .retrieve()
-//                .bodyToMono(SpotifyAlbumResponse.class)
-//                .block();
-//    }
+        return spotifyWebClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/search")
+                        .queryParam("q", query)
+                        .queryParam("type", "album")
+                        .queryParam("limit", 10)
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .retrieve()
+                .bodyToMono(SpotifyAlbumResponse.class)
+                .block();
+    }
 
     /**
      * Busca álbum por ID no Spotify
      */
-//    public SpotifyAlbumResponse.AlbumItem getAlbumById(String spotifyId) {
-//        String token = getAccessToken();
+    public SpotifyAlbumResponse.AlbumItem getAlbumById(String spotifyId) {
+        String token = getAccessToken();
 
-//        return spotifyWebClient
-//                .get()
-//                .uri("/albums/{id}", spotifyId)
-//                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-//                .retrieve()
-//                .bodyToMono(SpotifyAlbumResponse.AlbumItem.class)
-//                .block();
-//    }
-//}
+        return spotifyWebClient
+                .get()
+                .uri("/albums/{id}", spotifyId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .retrieve()
+                .bodyToMono(SpotifyAlbumResponse.AlbumItem.class)
+                .block();
+    }
+}

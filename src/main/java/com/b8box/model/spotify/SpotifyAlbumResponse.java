@@ -1,4 +1,4 @@
-/*package com.b8box.model.spotify;
+package com.b8box.model.spotify;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
@@ -107,4 +107,4 @@ public class SpotifyAlbumResponse {
         public int getDurationMs() { return durationMs; }
         public void setDurationMs(int durationMs) { this.durationMs = durationMs; }
     }
-}*/
+}

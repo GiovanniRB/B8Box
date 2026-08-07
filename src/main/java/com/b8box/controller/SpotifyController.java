@@ -1,4 +1,4 @@
-/*package com.b8box.controller;
+package com.b8box.controller;
 
 import com.b8box.model.Album;
 import com.b8box.model.Music;
@@ -124,4 +124,4 @@ public class SpotifyController {
             return null;
         }
     }
-}*/
+}

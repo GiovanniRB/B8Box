@@ -69,11 +69,11 @@
             <scope>runtime</scope>
         </dependency>
         
-        <!-- WebClient para chamadas HTTP (Spotify) 
+        <!-- WebClient para chamadas HTTP (Spotify) -->
 		<dependency>
 		    <groupId>org.springframework.boot</groupId>
 		    <artifactId>spring-boot-starter-webflux</artifactId>
-		</dependency>-->
+		</dependency>
 
         <!-- Lombok -->
         <dependency>

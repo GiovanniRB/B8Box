@@ -1,4 +1,4 @@
-/*package com.b8box.config;
+package com.b8box.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,4 +28,4 @@ public class SpotifyConfig {
     public String getClientSecret() {
         return clientSecret;
     }
-}*/
+}
