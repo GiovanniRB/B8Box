@@ -33,8 +33,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // 🔓 Libera completamente os endpoints de autenticação
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/", "/index.html", "/css/**", "/js/**").permitAll()
+                // 🔓 Libera arquivos estáticos (HTML, CSS, JS)
+                .requestMatchers("/", "/index.html", "/dashboard.html", "/css/**", "/js/**").permitAll()
+                // 🔒 Qualquer outra requisição exige autenticação
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

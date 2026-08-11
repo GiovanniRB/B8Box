@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "playlists")
 public class Playlist {
@@ -24,6 +26,7 @@ public class Playlist {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @Column(name = "created_at")
@@ -33,6 +36,7 @@ public class Playlist {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "playlist", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<PlaylistItem> items = new ArrayList<>();
 
     // Construtor vazio (OBRIGATÓRIO para JPA)

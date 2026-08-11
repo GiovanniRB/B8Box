@@ -1,13 +1,19 @@
 package com.b8box.controller;
 
+import com.b8box.dto.AlbumResponseDTO;
+import com.b8box.dto.RatingResponseDTO;
 import com.b8box.model.Album;
+import com.b8box.model.Rating;  // ← IMPORT ADICIONADO
 import com.b8box.repository.AlbumRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;  // ← IMPORT CORRETO
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;  // ← IMPORT ADICIONADO
 
 @RestController
 @RequestMapping("/api/albums")
@@ -20,8 +26,43 @@ public class AlbumController {
     // LISTAR TODOS OS ÁLBUNS
     // ============================================================
     @GetMapping
-    public List<Album> getAllAlbums() {
-        return albumRepository.findAll();
+    @Transactional(readOnly = true)  // ← AGORA FUNCIONA
+    public List<AlbumResponseDTO> getAllAlbums() {
+        return albumRepository.findAll().stream()
+            .map(album -> {
+                AlbumResponseDTO dto = new AlbumResponseDTO();
+                dto.setId(album.getId());
+                dto.setTitle(album.getTitle());
+                dto.setArtist(album.getArtist());
+                dto.setCoverUrl(album.getCoverUrl());
+                dto.setReleaseYear(album.getReleaseYear());
+                
+                // Calcula média
+                if (!album.getRatings().isEmpty()) {
+                    double avg = album.getRatings().stream()
+                        .mapToDouble(Rating::getScore)
+                        .average()
+                        .orElse(0.0);
+                    dto.setAverageRating(Math.round(avg * 10.0) / 10.0);
+                }
+                
+                // Mapeia avaliações
+                List<RatingResponseDTO> ratingDTOs = album.getRatings().stream()
+                    .map(r -> {
+                        RatingResponseDTO rdto = new RatingResponseDTO();
+                        rdto.setId(r.getId());
+                        rdto.setScore(r.getScore());
+                        rdto.setReview(r.getReview());
+                        rdto.setUsername(r.getUser().getUsername());
+                        rdto.setCreatedAt(r.getCreatedAt().toString());
+                        return rdto;
+                    })
+                    .collect(Collectors.toList());
+                dto.setRatings(ratingDTOs);
+                
+                return dto;
+            })
+            .collect(Collectors.toList());
     }
 
     // ============================================================

@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "musics")
 public class Music {
@@ -23,6 +25,7 @@ public class Music {
 
     @ManyToOne
     @JoinColumn(name = "album_id", nullable = false)
+    @JsonIgnore  // ← EVITA LOOP (MUSIC -> ALBUM -> MUSICS)
     private Album album;
 
     @Column(name = "created_at")

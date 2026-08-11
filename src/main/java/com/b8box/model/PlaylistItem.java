@@ -1,5 +1,7 @@
 package com.b8box.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -14,6 +16,7 @@ public class PlaylistItem {
 
     @ManyToOne
     @JoinColumn(name = "playlist_id", nullable = false)
+    @JsonIgnore
     private Playlist playlist;
 
     @ManyToOne

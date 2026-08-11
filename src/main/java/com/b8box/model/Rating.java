@@ -1,8 +1,7 @@
 package com.b8box.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,9 +12,6 @@ public class Rating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Min(0)
-    @Max(10)
-    @Column(nullable = false)
     private Double score;
 
     @Column(columnDefinition = "TEXT")
@@ -23,14 +19,17 @@ public class Rating {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @ManyToOne
     @JoinColumn(name = "album_id")
+    @JsonIgnore
     private Album album;
 
     @ManyToOne
     @JoinColumn(name = "music_id")
+    @JsonIgnore
     private Music music;
 
     @Column(name = "created_at")

@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "albums")
 public class Album {
@@ -29,9 +31,11 @@ public class Album {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "album", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore  // ← IMPEDE LOOP INFINITO
     private List<Music> musics = new ArrayList<>();
 
     @OneToMany(mappedBy = "album", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore  // ← IMPEDE LOOP INFINITO
     private List<Rating> ratings = new ArrayList<>();
 
     // Construtor vazio (OBRIGATÓRIO para JPA)

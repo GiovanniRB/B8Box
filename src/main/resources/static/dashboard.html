@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B8Box - Dashboard</title>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .album-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .album-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .album-cover {
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px 8px 0 0;
+        }
+        .star-rating {
+            color: #ffc107;
+        }
+        .nav-link.active {
+            font-weight: bold;
+            border-bottom: 3px solid #0d6efd;
+        }
+        .search-result-item {
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        #search-results {
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            border-radius: 0 0 8px 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================= -->
+    <!-- NAVBAR -->
+    <!-- ============================================= -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-music-note-beamed"></i> B8Box
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="navbar-text text-white me-3" id="user-name">Usuário</span>
+                <button class="btn btn-outline-light btn-sm" id="logout-btn">
+                    <i class="bi bi-box-arrow-right"></i> Sair
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============================================= -->
+    <!-- CONTEÚDO PRINCIPAL -->
+    <!-- ============================================= -->
+    <div class="container-fluid mt-4">
+
+        <!-- Barra de Busca (Spotify) -->
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto">
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-lg" id="search-input" placeholder="Busque um álbum no Spotify... (ex: Nevermind)" aria-label="Buscar álbum">
+                    <button class="btn btn-success" type="button" id="search-btn">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+                <!-- Resultados da busca -->
+                <div id="search-results" class="list-group mt-2 d-none"></div>
+            </div>
+        </div>
+
+        <!-- Navegação / Tabs -->
+        <ul class="nav nav-tabs" id="main-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-meus-albuns" data-bs-toggle="tab" data-bs-target="#content-area" type="button" role="tab" onclick="loadMyAlbums()">
+                    <i class="bi bi-collection"></i> Meus Álbuns
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-playlists" data-bs-toggle="tab" data-bs-target="#content-area" type="button" role="tab" onclick="loadMyPlaylists()">
+                    <i class="bi bi-list-ul"></i> Minhas Playlists
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-search" data-bs-toggle="tab" data-bs-target="#content-area" type="button" role="tab">
+                    <i class="bi bi-plus-circle"></i> Criar Playlist
+                </button>
+            </li>
+        </ul>
+
+        <!-- Área de Conteúdo Dinâmico -->
+        <div id="content-area" class="tab-content mt-4">
+            <!-- O JavaScript vai renderizar o conteúdo aqui -->
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-music-note-beamed" style="font-size: 3rem;"></i>
+                <p>Carregando seus álbuns...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================= -->
+    <!-- MODAL: Avaliar Álbum -->
+    <!-- ============================================= -->
+    <div class="modal fade" id="ratingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Avaliar Álbum</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="rating-album-id">
+                    <div class="mb-3">
+                        <label for="rating-score" class="form-label">Nota (0 a 10)</label>
+                        <input type="number" class="form-control" id="rating-score" min="0" max="10" step="0.1" placeholder="9.5">
+                    </div>
+                    <div class="mb-3">
+                        <label for="rating-review" class="form-label">Resenha</label>
+                        <textarea class="form-control" id="rating-review" rows="3" placeholder="O que você achou deste álbum?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="save-rating-btn">Salvar Avaliação</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- SCRIPTS -->
+    <!-- ============================================= -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

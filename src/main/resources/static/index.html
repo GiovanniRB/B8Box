@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B8Box - Entrar</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Seu CSS personalizado -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+        <div class="card p-4 shadow-lg" style="max-width: 450px; width: 100%; border-radius: 15px;">
+            <div class="text-center mb-4">
+                <h1 class="display-4 fw-bold text-primary">B8Box</h1>
+                <p class="text-muted" id="form-title">Entre para continuar</p>
+            </div>
+
+            <!-- Formulário de Login -->
+            <form id="login-form">
+                <div id="message-area" class="alert d-none" role="alert"></div>
+                <div class="mb-3">
+                    <label for="username" class="form-label">Usuário</label>
+                    <input type="text" class="form-control" id="username" placeholder="Digite seu usuário" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Senha</label>
+                    <input type="password" class="form-control" id="password" placeholder="Digite sua senha" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2" id="login-btn">Entrar</button>
+            </form>
+
+            <!-- Formulário de Cadastro -->
+            <form id="register-form" style="display: none;">
+                <div id="register-message-area" class="alert d-none" role="alert"></div>
+                <div class="mb-3">
+                    <label for="reg-username" class="form-label">Usuário</label>
+                    <input type="text" class="form-control" id="reg-username" placeholder="Escolha um usuário" required>
+                </div>
+                <div class="mb-3">
+                    <label for="reg-email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="reg-email" placeholder="Seu melhor email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="reg-password" class="form-label">Senha</label>
+                    <input type="password" class="form-control" id="reg-password" placeholder="Crie uma senha forte" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100 py-2">Criar Conta</button>
+            </form>
+
+            <!-- Links de Alternância -->
+            <div class="text-center mt-3">
+                <p id="toggle-text" class="text-muted">
+                    Não tem uma conta? <a href="#" id="toggle-link" class="text-primary fw-bold">Cadastre-se</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Seu JavaScript -->
+    <script src="/js/auth.js"></script>
+</body>
+</html>
