@@ -3,17 +3,24 @@ package com.b8box.controller;
 import com.b8box.dto.AlbumResponseDTO;
 import com.b8box.dto.RatingResponseDTO;
 import com.b8box.model.Album;
-import com.b8box.model.Rating;  // ← IMPORT ADICIONADO
+import com.b8box.model.Rating;
+import com.b8box.model.User;
 import com.b8box.repository.AlbumRepository;
+import com.b8box.repository.RatingRepository;
+import com.b8box.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;  // ← IMPORT CORRETO
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.stream.Collectors;  // ← IMPORT ADICIONADO
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/albums")
@@ -22,46 +29,47 @@ public class AlbumController {
     @Autowired
     private AlbumRepository albumRepository;
 
+    @Autowired
+    private RatingRepository ratingRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     // ============================================================
-    // LISTAR TODOS OS ÁLBUNS
+    // LISTAR TODOS OS ÁLBUNS (GLOBAL — usar na tela de Explorar/admin,
+    // NÃO representa "meus álbuns")
     // ============================================================
     @GetMapping
-    @Transactional(readOnly = true)  // ← AGORA FUNCIONA
+    @Transactional(readOnly = true)
     public List<AlbumResponseDTO> getAllAlbums() {
         return albumRepository.findAll().stream()
-            .map(album -> {
-                AlbumResponseDTO dto = new AlbumResponseDTO();
-                dto.setId(album.getId());
-                dto.setTitle(album.getTitle());
-                dto.setArtist(album.getArtist());
-                dto.setCoverUrl(album.getCoverUrl());
-                dto.setReleaseYear(album.getReleaseYear());
-                
-                // Calcula média
-                if (!album.getRatings().isEmpty()) {
-                    double avg = album.getRatings().stream()
-                        .mapToDouble(Rating::getScore)
-                        .average()
-                        .orElse(0.0);
-                    dto.setAverageRating(Math.round(avg * 10.0) / 10.0);
-                }
-                
-                // Mapeia avaliações
-                List<RatingResponseDTO> ratingDTOs = album.getRatings().stream()
-                    .map(r -> {
-                        RatingResponseDTO rdto = new RatingResponseDTO();
-                        rdto.setId(r.getId());
-                        rdto.setScore(r.getScore());
-                        rdto.setReview(r.getReview());
-                        rdto.setUsername(r.getUser().getUsername());
-                        rdto.setCreatedAt(r.getCreatedAt().toString());
-                        return rdto;
-                    })
-                    .collect(Collectors.toList());
-                dto.setRatings(ratingDTOs);
-                
-                return dto;
-            })
+            .map(this::toDto)
+            .collect(Collectors.toList());
+    }
+
+    // ============================================================
+    // NOVO: "MEUS ÁLBUNS" — só os álbuns em que o usuário logado
+    // já tem pelo menos uma avaliação (mecânica estilo Letterboxd:
+    // o álbum só "entra" no perfil quando você interage com ele).
+    // ============================================================
+    @GetMapping("/me")
+    @Transactional(readOnly = true)
+    public List<AlbumResponseDTO> getMyAlbums() {
+        User user = getAuthenticatedUser();
+        List<Rating> myRatings = ratingRepository.findByUserId(user.getId());
+
+        // Um álbum pode ter mais de uma avaliação sua seria estranho (você já
+        // bloqueia isso no RatingController), mas por segurança deduplicamos
+        // por id do álbum mantendo a ordem de primeira aparição.
+        Map<Long, Album> albumsById = new LinkedHashMap<>();
+        for (Rating r : myRatings) {
+            if (r.getAlbum() != null) {
+                albumsById.put(r.getAlbum().getId(), r.getAlbum());
+            }
+        }
+
+        return albumsById.values().stream()
+            .map(this::toDto)
             .collect(Collectors.toList());
     }
 
@@ -127,5 +135,47 @@ public class AlbumController {
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ============================================================
+    // MÉTODOS AUXILIARES
+    // ============================================================
+    private AlbumResponseDTO toDto(Album album) {
+        AlbumResponseDTO dto = new AlbumResponseDTO();
+        dto.setId(album.getId());
+        dto.setTitle(album.getTitle());
+        dto.setArtist(album.getArtist());
+        dto.setCoverUrl(album.getCoverUrl());
+        dto.setReleaseYear(album.getReleaseYear());
+
+        if (!album.getRatings().isEmpty()) {
+            double avg = album.getRatings().stream()
+                .mapToDouble(Rating::getScore)
+                .average()
+                .orElse(0.0);
+            dto.setAverageRating(Math.round(avg * 10.0) / 10.0);
+        }
+
+        List<RatingResponseDTO> ratingDTOs = album.getRatings().stream()
+            .map(r -> {
+                RatingResponseDTO rdto = new RatingResponseDTO();
+                rdto.setId(r.getId());
+                rdto.setScore(r.getScore());
+                rdto.setReview(r.getReview());
+                rdto.setUsername(r.getUser().getUsername());
+                rdto.setCreatedAt(r.getCreatedAt().toString());
+                return rdto;
+            })
+            .collect(Collectors.toList());
+        dto.setRatings(ratingDTOs);
+
+        return dto;
+    }
+
+    private User getAuthenticatedUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 }

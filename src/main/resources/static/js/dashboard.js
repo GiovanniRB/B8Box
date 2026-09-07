@@ -166,17 +166,41 @@ async function importAlbum(spotifyId) {
 // ============================================================
 // VER DETALHES DO ÁLBUM
 // ============================================================
+// CORRIGIDO: antes dependia de album.ratings (vinha vazio, pois getAlbumById
+// retorna a entidade Album crua, sem o mapeamento manual que a listagem faz)
+// e nunca buscava as faixas. Agora usa os endpoints dedicados que já existem:
+// GET /api/musics/album/{id} e GET /api/ratings/album/{id}.
+
+function formatDuration(seconds) {
+    if (!seconds && seconds !== 0) return '';
+    const min = Math.floor(seconds / 60);
+    const sec = String(seconds % 60).padStart(2, '0');
+    return `${min}:${sec}`;
+}
+
 async function viewAlbumDetails(albumId) {
     try {
-        const response = await fetch(`${API_BASE}/albums/${albumId}`, { headers: getHeaders() });
-        const album = await response.json();
-        if (!response.ok) throw new Error(album.message || 'Erro ao carregar álbum');
-        
-        const ratings = album.ratings || [];
-        const avgRating = ratings.length > 0 
+        const [albumRes, musicsRes, ratingsRes] = await Promise.all([
+            fetch(`${API_BASE}/albums/${albumId}`, { headers: getHeaders() }),
+            fetch(`${API_BASE}/musics/album/${albumId}`, { headers: getHeaders() }),
+            fetch(`${API_BASE}/ratings/album/${albumId}`, { headers: getHeaders() })
+        ]);
+
+        const album = await albumRes.json();
+        if (!albumRes.ok) throw new Error(album.message || 'Erro ao carregar álbum');
+
+        // Se algum desses falhar (ex: erro 500 por recursão de serialização),
+        // não trava a tela inteira — só mostra a seção vazia.
+        const musics = musicsRes.ok ? await musicsRes.json() : [];
+        const ratings = ratingsRes.ok ? await ratingsRes.json() : [];
+
+        if (!musicsRes.ok) console.warn('Não foi possível carregar as faixas:', musicsRes.status);
+        if (!ratingsRes.ok) console.warn('Não foi possível carregar as avaliações:', ratingsRes.status);
+
+        const avgRating = ratings.length > 0
             ? (ratings.reduce((sum, r) => sum + r.score, 0) / ratings.length).toFixed(1)
             : 'Sem avaliações';
-        
+
         contentArea.innerHTML = `
             <div class="row">
                 <div class="col-md-4">
@@ -192,14 +216,27 @@ async function viewAlbumDetails(albumId) {
                     <h2>${album.title}</h2>
                     <h5 class="text-muted">${album.artist}</h5>
                     <p><strong>Lançamento:</strong> ${album.releaseYear || 'N/A'}</p>
+
+                    <h5 class="mt-4">Faixas</h5>
+                    ${musics.length === 0 ? '<p class="text-muted">Nenhuma faixa cadastrada.</p>' : `
+                        <ol class="list-group list-group-numbered mb-4">
+                            ${musics.map(m => `
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent text-white" style="border-color: rgba(255,255,255,0.1);">
+									${m.title}
+									<span class="text-muted small">${formatDuration(m.duration)}</span>
+                                </li>
+                            `).join('')}
+                        </ol>
+                    `}
+
                     <h5 class="mt-4">Avaliações (média: ${avgRating})</h5>
                     ${ratings.length === 0 ? '<p class="text-muted">Nenhuma avaliação ainda.</p>' : ''}
                     ${ratings.map(r => `
                         <div class="border-bottom py-2">
-                            <strong>${r.user?.username || 'Usuário'}</strong>
+                            <strong>${(r.user && r.user.username) || r.username || 'Usuário'}</strong>
                             <span class="badge bg-warning text-dark">${r.score}</span>
                             ${r.review ? `<p class="mb-0 small">${r.review}</p>` : ''}
-                            <small class="text-muted">${new Date(r.createdAt).toLocaleDateString()}</small>
+                            <small class="text-muted">${r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ''}</small>
                         </div>
                     `).join('')}
                 </div>

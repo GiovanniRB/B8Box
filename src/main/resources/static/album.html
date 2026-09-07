@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B8Box - Álbum</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div class="wave-field" style="height:420px;">
+        <svg viewBox="0 0 1440 420" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="waveGrad3" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            <g fill="none" stroke="url(#waveGrad3)" stroke-width="1.2">
+                <path d="M -100 300 C 200 200, 400 360, 700 220 C 1000 80, 1200 200, 1550 40"/>
+                <path d="M -100 340 C 220 240, 420 400, 720 260 C 1020 120, 1220 240, 1580 80"/>
+            </g>
+        </svg>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-5">
+            <a class="navbar-brand" href="/dashboard.html"><i class="bi bi-music-note-beamed"></i> B8Box</a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="navbar-text text-white"><i class="bi bi-person-circle"></i> <span id="user-name">Usuário</span></span>
+                <button class="btn-pill-outline btn-sm" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Sair</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-5" style="position:relative; z-index:2;">
+        <a href="/dashboard.html" class="back-link mb-3 d-inline-flex"><i class="bi bi-arrow-left"></i> Voltar ao dashboard</a>
+    </div>
+
+    <!-- ALBUM HEADER -->
+    <div class="album-hero">
+        <div class="d-flex flex-wrap align-items-center gap-4">
+            <div class="album-hero-cover" id="album-cover">
+                <i class="bi bi-vinyl-fill"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h1 class="fw-bold mb-1" id="album-title">Carregando álbum...</h1>
+                <p class="text-muted mb-2" id="album-artist">&nbsp;</p>
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <div class="rating-summary">
+                        <span class="big-num" id="album-avg-rating">—</span>
+                        <div>
+                            <div class="star-rating">★★★★★</div>
+                            <div class="count"><span id="album-ratings-count">0</span> avaliações</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-rate-album"><i class="bi bi-star-fill"></i> Avaliar</button>
+                    <button class="btn-pill-outline" id="btn-add-to-playlist"><i class="bi bi-plus-lg"></i> Adicionar à playlist</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-5 mt-5" style="position:relative; z-index:2;">
+        <div class="row g-4">
+            <!-- Faixas -->
+            <div class="col-lg-5">
+                <h5 class="mb-3">Faixas</h5>
+                <div class="card p-0" id="track-list">
+                    <div class="text-center text-muted py-4">Carregando faixas...</div>
+                </div>
+            </div>
+
+            <!-- Avaliações -->
+            <div class="col-lg-7">
+                <div id="your-review-section" class="mb-4"></div>
+
+                <h5 class="mb-3">Avaliações da comunidade</h5>
+                <div id="reviews-list" class="d-flex flex-column gap-3">
+                    <div class="text-center text-muted py-4">Carregando avaliações...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-5"></div>
+
+    <!-- MODAL: Avaliar Álbum -->
+    <div class="modal fade" id="ratingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="border-bottom:1px solid var(--border-soft);">
+                    <h5 class="modal-title" id="rating-modal-title">Avaliar Álbum</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="rating-album-id">
+                    <input type="hidden" id="rating-id">
+                    <div class="mb-3 text-center">
+                        <label class="form-label d-block">Nota</label>
+                        <div class="star-input" id="star-input">
+                            <span data-value="2">★</span><span data-value="4">★</span><span data-value="6">★</span><span data-value="8">★</span><span data-value="10">★</span>
+                        </div>
+                        <input type="number" class="form-control mt-2 text-center" id="rating-score" min="0" max="10" step="0.1" placeholder="9.5" style="max-width:120px; margin:0 auto;">
+                    </div>
+                    <div class="mb-3">
+                        <label for="rating-review" class="form-label">Resenha</label>
+                        <textarea class="form-control" id="rating-review" rows="3" placeholder="O que você achou deste álbum?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between" style="border-top:1px solid var(--border-soft);">
+                    <button type="button" class="btn btn-outline-danger d-none" id="delete-rating-btn"><i class="bi bi-trash"></i> Excluir</button>
+                    <div>
+                        <button type="button" class="btn-pill-outline me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="save-rating-btn">Salvar Avaliação</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/album.js"></script>
+</body>
+</html>

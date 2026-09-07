@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/spotify")
@@ -35,7 +36,7 @@ public class SpotifyController {
     public ResponseEntity<?> searchAlbums(@RequestParam String q) {
         try {
             SpotifyAlbumResponse response = spotifyService.searchAlbums(q);
-            
+
             List<Map<String, Object>> results = new ArrayList<>();
             if (response != null && response.getAlbums() != null) {
                 for (SpotifyAlbumResponse.AlbumItem item : response.getAlbums().getItems()) {
@@ -49,61 +50,120 @@ public class SpotifyController {
                     results.add(albumInfo);
                 }
             }
-            
+
             return ResponseEntity.ok(results);
-            
+
         } catch (Exception e) {
             return ResponseEntity.status(500).body("❌ Erro ao buscar no Spotify: " + e.getMessage());
         }
     }
 
     // ============================================================
-    // IMPORTAR ÁLBUM DO SPOTIFY PARA O B8BOX
+    // NOVO: PREVIEW DE UM ÁLBUM DO SPOTIFY (SEM IMPORTAR)
+    // Usado pela tela de Explorar/Detalhe antes do usuário decidir
+    // avaliar/favoritar (o que dispara o import de fato).
+    // Se o álbum já foi importado antes (existe por spotifyId), devolve
+    // o registro local (com o id interno) junto, pra a tela já linkar certo.
     // ============================================================
-    @PostMapping("/import/{spotifyId}")
-    public ResponseEntity<?> importAlbum(@PathVariable String spotifyId) {
+    @GetMapping("/album/{spotifyId}")
+    public ResponseEntity<?> previewAlbum(@PathVariable String spotifyId) {
         try {
-            // 1. Busca o álbum no Spotify
             SpotifyAlbumResponse.AlbumItem spotifyAlbum = spotifyService.getAlbumById(spotifyId);
-            
             if (spotifyAlbum == null) {
                 return ResponseEntity.status(404).body("❌ Álbum não encontrado no Spotify");
             }
 
-            // 2. Verifica se já existe no B8Box
+            Map<String, Object> result = new HashMap<>();
+            result.put("spotifyId", spotifyAlbum.getId());
+            result.put("title", spotifyAlbum.getName());
+            result.put("artist", spotifyAlbum.getArtists().get(0).getName());
+            result.put("releaseYear", extractYear(spotifyAlbum.getReleaseDate()));
+            if (!spotifyAlbum.getImages().isEmpty()) {
+                result.put("coverUrl", spotifyAlbum.getImages().get(0).getUrl());
+            }
+
+            List<Map<String, Object>> tracks = new ArrayList<>();
+            if (spotifyAlbum.getTracks() != null && spotifyAlbum.getTracks().getItems() != null) {
+                for (SpotifyAlbumResponse.TrackItem track : spotifyAlbum.getTracks().getItems()) {
+                    Map<String, Object> t = new HashMap<>();
+                    t.put("title", track.getName());
+                    t.put("trackNumber", track.getTrackNumber());
+                    t.put("duration", track.getDurationMs() / 1000);
+                    tracks.add(t);
+                }
+            }
+            result.put("tracks", tracks);
+
+            // Se já existe localmente, inclui o id interno e avisa o front
+            Optional<Album> existing = albumRepository.findBySpotifyId(spotifyId);
+            result.put("alreadyImported", existing.isPresent());
+            result.put("localAlbumId", existing.map(Album::getId).orElse(null));
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("❌ Erro ao buscar álbum no Spotify: " + e.getMessage());
+        }
+    }
+
+    // ============================================================
+    // IMPORTAR ÁLBUM DO SPOTIFY PARA O B8BOX
+    // CORRIGIDO: agora verifica se o álbum (por spotifyId) já existe antes
+    // de criar. Se existir, apenas retorna o registro existente — sem
+    // duplicar álbum nem faixas.
+    // ============================================================
+    @PostMapping("/import/{spotifyId}")
+    public ResponseEntity<?> importAlbum(@PathVariable String spotifyId) {
+        try {
+            // 1. Já importado? Retorna direto, sem duplicar.
+            Optional<Album> existingAlbum = albumRepository.findBySpotifyId(spotifyId);
+            if (existingAlbum.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "✅ Álbum já estava na sua base.");
+                response.put("album", existingAlbum.get());
+                return ResponseEntity.ok(response);
+            }
+
+            // 2. Busca o álbum no Spotify
+            SpotifyAlbumResponse.AlbumItem spotifyAlbum = spotifyService.getAlbumById(spotifyId);
+            if (spotifyAlbum == null) {
+                return ResponseEntity.status(404).body("❌ Álbum não encontrado no Spotify");
+            }
+
             String artistName = spotifyAlbum.getArtists().get(0).getName();
             String albumTitle = spotifyAlbum.getName();
-            
-            // 3. Cria o álbum no B8Box
+
+            // 3. Cria o álbum no B8Box (agora salvando o spotifyId)
             Album album = new Album();
             album.setTitle(albumTitle);
             album.setArtist(artistName);
             album.setReleaseYear(extractYear(spotifyAlbum.getReleaseDate()));
+            album.setSpotifyId(spotifyId);
             if (!spotifyAlbum.getImages().isEmpty()) {
                 album.setCoverUrl(spotifyAlbum.getImages().get(0).getUrl());
             }
-            
+
             Album savedAlbum = albumRepository.save(album);
-            
+
             // 4. Importa as músicas
             if (spotifyAlbum.getTracks() != null && spotifyAlbum.getTracks().getItems() != null) {
                 for (SpotifyAlbumResponse.TrackItem track : spotifyAlbum.getTracks().getItems()) {
                     Music music = new Music();
                     music.setTitle(track.getName());
                     music.setTrackNumber(track.getTrackNumber());
-                    music.setDuration(track.getDurationMs() / 1000); // Converte ms para segundos
+                    music.setDuration(track.getDurationMs() / 1000);
                     music.setAlbum(savedAlbum);
                     musicRepository.save(music);
                 }
             }
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("message", "✅ Álbum importado com sucesso!");
             response.put("album", savedAlbum);
             response.put("tracks", spotifyAlbum.getTotalTracks());
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             return ResponseEntity.status(500).body("❌ Erro ao importar álbum: " + e.getMessage());
         }
@@ -115,7 +175,6 @@ public class SpotifyController {
     private Integer extractYear(String releaseDate) {
         if (releaseDate == null || releaseDate.isEmpty()) return null;
         try {
-            // Formato: "2024-01-15" ou "2024"
             if (releaseDate.contains("-")) {
                 return Integer.parseInt(releaseDate.split("-")[0]);
             }

@@ -30,15 +30,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> {}) // Habilita o CORS configurado no WebConfig
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // 🔓 Libera completamente os endpoints de autenticação
                 .requestMatchers("/api/auth/**").permitAll()
-                // 🔓 Libera arquivos estáticos (HTML, CSS, JS)
-                .requestMatchers("/", "/index.html", "/dashboard.html", "/css/**", "/js/**").permitAll()
-                // 🔒 Qualquer outra requisição exige autenticação
-                .anyRequest().authenticated()
+                
+                // 🔓 Libera a raiz e os arquivos estáticos para o navegador carregar
+                .requestMatchers(
+                    "/", 
+                    "/index.html", 
+                    "/dashboard.html", 
+                    "/css/**", 
+                    "/js/**",
+                    "/images/**",
+                    "/favicon.ico",
+                    "/error"
+                ).permitAll() 
+                
+                // 🔒 Qualquer outra requisição de API exige autenticação
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll() // Permite qualquer outra coisa (importante para o Spring Boot servir o front)
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
