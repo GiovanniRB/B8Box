@@ -48,9 +48,8 @@ public class AlbumController {
     }
 
     // ============================================================
-    // NOVO: "MEUS ÁLBUNS" — só os álbuns em que o usuário logado
-    // já tem pelo menos uma avaliação (mecânica estilo Letterboxd:
-    // o álbum só "entra" no perfil quando você interage com ele).
+    // "MEUS ÁLBUNS" — só os álbuns em que o usuário logado já tem
+    // pelo menos uma avaliação.
     // ============================================================
     @GetMapping("/me")
     @Transactional(readOnly = true)
@@ -58,9 +57,6 @@ public class AlbumController {
         User user = getAuthenticatedUser();
         List<Rating> myRatings = ratingRepository.findByUserId(user.getId());
 
-        // Um álbum pode ter mais de uma avaliação sua seria estranho (você já
-        // bloqueia isso no RatingController), mas por segurança deduplicamos
-        // por id do álbum mantendo a ordem de primeira aparição.
         Map<Long, Album> albumsById = new LinkedHashMap<>();
         for (Rating r : myRatings) {
             if (r.getAlbum() != null) {
@@ -110,15 +106,22 @@ public class AlbumController {
 
     // ============================================================
     // ATUALIZAR ÁLBUM
+    // NOVO: agora também aceita spotifyId. Isso é o que permite "religar"
+    // um álbum antigo (importado antes do dedupe existir, com
+    // spotify_id = null) ao spotifyId real — assim ele passa a ser
+    // reconhecido pelo dedupe em importações futuras.
     // ============================================================
     @PutMapping("/{id}")
-    public ResponseEntity<Album> updateAlbum(@PathVariable Long id, @RequestBody Album album) {
+    public ResponseEntity<?> updateAlbum(@PathVariable Long id, @RequestBody Album album) {
         return albumRepository.findById(id)
                 .map(existing -> {
                     existing.setTitle(album.getTitle());
                     existing.setArtist(album.getArtist());
                     existing.setCoverUrl(album.getCoverUrl());
                     existing.setReleaseYear(album.getReleaseYear());
+                    if (album.getSpotifyId() != null && !album.getSpotifyId().isBlank()) {
+                        existing.setSpotifyId(album.getSpotifyId());
+                    }
                     return ResponseEntity.ok(albumRepository.save(existing));
                 })
                 .orElse(ResponseEntity.notFound().build());
