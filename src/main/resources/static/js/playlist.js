@@ -17,13 +17,6 @@ function getParam(name) {
     return new URLSearchParams(window.location.search).get(name);
 }
 
-function formatDuration(seconds) {
-    if (seconds === null || seconds === undefined) return '';
-    const min = Math.floor(seconds / 60);
-    const sec = String(seconds % 60).padStart(2, '0');
-    return `${min}:${sec}`;
-}
-
 const playlistId = getParam('id');
 let currentPlaylist = null;
 
@@ -36,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadPlaylist();
-    loadTracks();
+    loadAlbums();
 
     document.getElementById('btn-edit-playlist').addEventListener('click', showEditForm);
     document.getElementById('btn-cancel-edit').addEventListener('click', hideEditForm);
@@ -72,49 +65,100 @@ function renderPlaylistHeader(playlist) {
         : '<i class="bi bi-lock-fill"></i> Privada';
 }
 
-async function loadTracks() {
+// ============================================================
+// CARREGAR ÁLBUNS (usa endpoint NOVO /albums)
+// ============================================================
+async function loadAlbums() {
     const container = document.getElementById('track-list');
-    try {
-        const res = await fetch(`${API_BASE}/playlists/${playlistId}/musics`, { headers: authHeaders() });
-        if (!res.ok) throw new Error('Falha ao carregar faixas');
-        const musics = await res.json();
 
-        if (!musics.length) {
-            container.innerHTML = '<div class="text-center text-muted py-4">Nenhuma faixa nessa playlist ainda. Adicione faixas a partir da página de um álbum.</div>';
+    container.innerHTML = `
+        <div class="text-center text-muted py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Carregando álbuns...</p>
+        </div>
+    `;
+
+    try {
+        const res = await fetch(`${API_BASE}/playlists/${playlistId}/albums`, { headers: authHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar álbuns');
+        const albums = await res.json();
+
+        if (!albums.length) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-collection" style="font-size: 2.5rem;"></i>
+                    <p class="mt-3">Nenhum álbum nessa playlist ainda.</p>
+                    <p class="small">Adicione álbuns a partir da página de um álbum.</p>
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = musics.map((m, i) => `
-            <div class="track-row">
-                <span class="track-num">${i + 1}</span>
-                <span class="track-name">${m.title}</span>
-                <span class="track-duration">${formatDuration(m.duration)}</span>
-                <button class="btn btn-sm btn-outline-danger ms-3" onclick="removeTrack(${m.id})" title="Remover da playlist">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+        container.innerHTML = `
+            <div class="row g-3">
+                ${albums.map(a => renderAlbumCard(a)).join('')}
             </div>
-        `).join('');
+        `;
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<div class="text-center text-muted py-4">Não foi possível carregar as faixas.</div>';
+        container.innerHTML = '<div class="text-center text-muted py-4">Não foi possível carregar os álbuns.</div>';
     }
 }
 
-async function removeTrack(musicId) {
-    if (!confirm('Remover essa faixa da playlist?')) return;
+function renderAlbumCard(album) {
+    const cover = album.coverUrl || 'https://via.placeholder.com/300x300/cccccc/666666?text=Sem+Capa';
+    const spotifyLink = album.spotifyId
+        ? `https://open.spotify.com/album/${album.spotifyId}`
+        : null;
+
+    return `
+        <div class="col-6 col-md-4 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <img src="${cover}" class="card-img-top" alt="${album.title}"
+                     style="height: 180px; object-fit: cover;">
+                <div class="card-body d-flex flex-column p-2">
+                    <h6 class="card-title text-truncate mb-1" title="${album.title}">${album.title}</h6>
+                    <p class="card-text text-muted small mb-2 text-truncate">${album.artist}</p>
+
+                    <div class="mt-auto d-flex gap-1">
+                        <a href="/album-detail.html?id=${album.id}" class="btn btn-sm btn-outline-primary flex-fill" title="Abrir álbum">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        ${spotifyLink
+                            ? `<a href="${spotifyLink}" target="_blank" class="btn btn-sm btn-outline-success" title="Abrir no Spotify">
+                                   <i class="bi bi-spotify"></i>
+                               </a>`
+                            : ''}
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="removeAlbum(${album.id}, '${album.title.replace(/'/g, "\\'")}')"
+                                title="Remover da playlist">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function removeAlbum(albumId, albumTitle) {
+    if (!confirm(`Remover "${albumTitle}" da playlist?`)) return;
     try {
-        const res = await fetch(`${API_BASE}/playlists/${playlistId}/musics/${musicId}`, {
+        const res = await fetch(`${API_BASE}/playlists/${playlistId}/albums/${albumId}`, {
             method: 'DELETE',
             headers: authHeaders()
         });
-        if (!res.ok) throw new Error('Falha ao remover faixa');
-        loadTracks();
+        if (!res.ok) throw new Error('Falha ao remover álbum');
+        loadAlbums();
     } catch (err) {
         console.error(err);
-        alert('Não foi possível remover a faixa.');
+        alert('Não foi possível remover o álbum.');
     }
 }
 
+// ============================================================
+// EDITAR / DELETAR PLAYLIST (mantido igual)
+// ============================================================
 function showEditForm() {
     if (!currentPlaylist) return;
     document.getElementById('edit-title').value = currentPlaylist.title || '';
