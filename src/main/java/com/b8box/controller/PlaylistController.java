@@ -305,8 +305,8 @@ public class PlaylistController {
 
     private User getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        return userRepository.findByUsername(username)
+        String email = auth.getName(); // agora é o email
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 }

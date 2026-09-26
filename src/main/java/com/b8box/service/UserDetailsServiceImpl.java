@@ -18,20 +18,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        System.out.println("🔍 Buscando usuário: " + username);
-        
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    System.out.println("❌ Usuário não encontrado: " + username);
-                    return new UsernameNotFoundException("Usuário não encontrado: " + username);
-                });
-        
-        System.out.println("✅ Usuário encontrado: " + user.getUsername());
-        System.out.println("🔍 Senha no banco: " + user.getPassword());
-        
+    public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
+        // Aceita username OU email na busca
+        User user = userRepository.findByUsername(login)
+                .or(() -> userRepository.findByEmail(login))
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + login));
+
+        // ⚠️ O principal (subject do JWT) é o EMAIL — imutável
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
+                user.getEmail(),
                 user.getPassword(),
                 List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
