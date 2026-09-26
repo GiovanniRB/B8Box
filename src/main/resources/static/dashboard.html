@@ -30,10 +30,10 @@
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid px-5">
-            <a class="navbar-brand" href="#"><i class="bi bi-music-note-beamed"></i> B8Box</a>
+            <a class="navbar-brand" href="/dashboard.html"><i class="bi bi-music-note-beamed"></i> B8Box</a>
             <div class="d-flex align-items-center gap-3">
-                <a href="index.html" class="nav-link-ghost active d-none d-md-inline">Início</a>
-                <a href="explore.htmlx" class="nav-link-ghost d-none d-md-inline">Explorar</a>
+                <a href="/dashboard.html" class="nav-link-ghost active d-none d-md-inline">Início</a>
+                <a href="/explore.html" class="nav-link-ghost d-none d-md-inline">Explorar</a>
                 <span class="navbar-text text-white"><i class="bi bi-person-circle"></i> <span id="user-name">Usuário</span></span>
                 <button class="btn-pill-outline btn-sm" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Sair</button>
             </div>
@@ -111,41 +111,13 @@
                     </li>
                 </ul>
 
-                <!-- dashboard.js deve renderizar cada álbum como:
-                     <a href="album-detail.html?id=ID_DO_ALBUM" class="album-card ..."> ... </a>
-                     assim o clique no card leva direto para a tela de detalhes -->
+                <!-- cada álbum é um link direto para album-detail.html?id=ID_DO_ALBUM,
+                     renderizado por renderAlbumCard() no dashboard.js -->
                 <div id="content-area" class="tab-content mt-4">
                     <div class="text-center text-muted py-5">
                         <i class="bi bi-music-note-beamed" style="font-size: 2.5rem; color: var(--purple-2);"></i>
                         <p class="mt-2">Carregando seus álbuns...</p>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: Avaliar Álbum -->
-    <div class="modal fade" id="ratingModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header" style="border-bottom:1px solid var(--border-soft);">
-                    <h5 class="modal-title">Avaliar Álbum</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="rating-album-id">
-                    <div class="mb-3">
-                        <label for="rating-score" class="form-label">Nota (0 a 10)</label>
-                        <input type="number" class="form-control" id="rating-score" min="0" max="10" step="0.1" placeholder="9.5">
-                    </div>
-                    <div class="mb-3">
-                        <label for="rating-review" class="form-label">Resenha</label>
-                        <textarea class="form-control" id="rating-review" rows="3" placeholder="O que você achou deste álbum?"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer" style="border-top:1px solid var(--border-soft);">
-                    <button type="button" class="btn-pill-outline" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="save-rating-btn">Salvar Avaliação</button>
                 </div>
             </div>
         </div>

@@ -32,6 +32,7 @@ let currentSpotifyId = getParam('spotifyId');
 let isPreviewMode = !currentAlbumId && !!currentSpotifyId;
 let currentUserId = null;
 let currentUserRating = null; // preenchido em loadRatings() quando o usuário já avaliou este álbum
+let currentTrackIds = []; // ids internos das faixas, preenchido em loadTracks() — usado pelo "Adicionar à playlist"
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!currentAlbumId && !currentSpotifyId) {
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('btn-rate-album').addEventListener('click', onRateClick);
+    document.getElementById('btn-add-to-playlist').addEventListener('click', openPlaylistPicker);
     document.getElementById('save-rating-btn').addEventListener('click', saveRating);
     document.getElementById('delete-rating-btn').addEventListener('click', deleteRating);
 
@@ -160,6 +162,7 @@ async function loadTracks() {
         const res = await fetch(`${API_BASE}/musics/album/${currentAlbumId}`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Falha ao carregar faixas');
         const musics = await res.json();
+        currentTrackIds = musics.map(m => m.id); // usado pelo "Adicionar à playlist"
         renderTracks(musics.map(m => ({ title: m.title, duration: m.duration })));
     } catch (err) {
         console.error(err);
@@ -180,6 +183,65 @@ function renderTracks(tracks) {
             <span class="track-duration">${formatDuration(m.duration)}</span>
         </div>
     `).join('');
+}
+
+// ============================================================
+// ADICIONAR À PLAYLIST
+// Lista as playlists do usuário num modal; ao escolher uma, adiciona
+// TODAS as faixas do álbum a ela (POST /api/playlists/{id}/musics/{musicId}
+// pra cada faixa). Só fica disponível quando o álbum já está importado
+// (currentTrackIds vem de loadTracks(), que só roda no modo "id").
+// ============================================================
+async function openPlaylistPicker() {
+    const listEl = document.getElementById('playlist-picker-list');
+    listEl.innerHTML = '<div class="text-center text-muted py-3">Carregando suas playlists...</div>';
+    new bootstrap.Modal(document.getElementById('addToPlaylistModal')).show();
+
+    try {
+        const res = await fetch(`${API_BASE}/playlists/me`, { headers: authHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar playlists');
+        const playlists = await res.json();
+
+        if (!playlists.length) {
+            listEl.innerHTML = '<div class="text-center text-muted py-3">Você ainda não tem playlists. Crie uma no dashboard primeiro.</div>';
+            return;
+        }
+
+        listEl.innerHTML = playlists.map(p => `
+            <button type="button" class="list-group-item list-group-item-action" onclick="addAlbumToPlaylist(${p.id}, this)">
+                <i class="bi bi-list-ul me-2"></i>${p.title}
+            </button>
+        `).join('');
+    } catch (err) {
+        console.error(err);
+        listEl.innerHTML = '<div class="text-center text-muted py-3">Não foi possível carregar suas playlists.</div>';
+    }
+}
+
+async function addAlbumToPlaylist(playlistId, btnEl) {
+    if (!currentTrackIds.length) {
+        alert('Este álbum não tem faixas cadastradas pra adicionar.');
+        return;
+    }
+
+    btnEl.disabled = true;
+    const originalText = btnEl.innerHTML;
+    btnEl.innerHTML = 'Adicionando...';
+
+    try {
+        await Promise.all(currentTrackIds.map(musicId =>
+            fetch(`${API_BASE}/playlists/${playlistId}/musics/${musicId}`, {
+                method: 'POST',
+                headers: authHeaders()
+            })
+        ));
+        bootstrap.Modal.getInstance(document.getElementById('addToPlaylistModal')).hide();
+    } catch (err) {
+        console.error(err);
+        alert('Não foi possível adicionar todas as faixas à playlist.');
+        btnEl.disabled = false;
+        btnEl.innerHTML = originalText;
+    }
 }
 
 async function loadRatings() {
@@ -267,7 +329,6 @@ async function onRateClick() {
             currentAlbumId = data.album.id;
             isPreviewMode = false;
             history.replaceState(null, '', `album-detail.html?id=${currentAlbumId}`);
-            document.getElementById('preview-banner').classList.add('d-none');
             document.getElementById('btn-add-to-playlist').classList.remove('d-none');
             document.getElementById('rating-album-id').value = currentAlbumId;
         } catch (err) {
