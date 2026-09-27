@@ -32,9 +32,7 @@
             <div class="d-flex align-items-center gap-3">
                 <a href="/dashboard.html" class="nav-link-ghost d-none d-md-inline">Início</a>
                 <a href="/explore.html" class="nav-link-ghost active d-none d-md-inline">Explorar</a>
-				<a href="/profile.html" class="navbar-text text-white text-decoration-none">
-				    <i class="bi bi-person-circle"></i> <span id="user-name">Usuário</span>
-				</a>
+                <a href="/profile.html" class="navbar-text text-white text-decoration-none"><i class="bi bi-person-circle"></i> <span id="user-name">Usuário</span></a>
                 <button class="btn-pill-outline btn-sm" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Sair</button>
             </div>
         </div>
@@ -43,22 +41,45 @@
     <div class="container-fluid px-5" style="position:relative; z-index:2;">
         <div class="text-center mb-4">
             <h1 class="fw-bold">Explorar</h1>
-            <p class="text-muted">Busque qualquer álbum no Spotify e veja os detalhes antes de avaliar.</p>
+            <p class="text-muted">Busque álbuns, perfis ou playlists públicas.</p>
         </div>
 
-        <div class="row mb-5">
+        <div class="row mb-3">
             <div class="col-md-8 mx-auto">
                 <div class="input-group">
-                    <input type="text" class="form-control form-control-lg" id="search-input" placeholder="Busque um álbum, artista..." aria-label="Buscar álbum">
+                    <input type="text" class="form-control form-control-lg" id="search-input" placeholder="Buscar..." aria-label="Buscar">
                     <button class="btn btn-primary" type="button" id="search-btn"><i class="bi bi-search"></i> Buscar</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ABAS -->
+        <div class="row mb-5">
+            <div class="col-md-8 mx-auto">
+                <ul class="nav nav-tabs justify-content-center" id="search-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-tab="albums" onclick="switchTab('albums')">
+                            <i class="bi bi-vinyl"></i> Álbuns
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-tab="profiles" onclick="switchTab('profiles')">
+                            <i class="bi bi-person"></i> Perfis
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-tab="playlists" onclick="switchTab('playlists')">
+                            <i class="bi bi-list-ul"></i> Playlists
+                        </button>
+                    </li>
+                </ul>
             </div>
         </div>
 
         <div id="results-grid" class="row g-4 mb-5">
             <div class="col-12 text-center text-muted py-5">
                 <i class="bi bi-search" style="font-size: 2.5rem; color: var(--purple-2);"></i>
-                <p class="mt-2">Busque um álbum para começar a explorar.</p>
+                <p class="mt-2">Busque algo pra começar a explorar.</p>
             </div>
         </div>
     </div>

@@ -57,6 +57,28 @@ public class PlaylistController {
     }
 
     // ============================================================
+    // NOVO: BUSCAR PLAYLISTS PÚBLICAS POR TÍTULO (aba "Playlists" do
+    // Explorar). Filtra em memória sobre as públicas — mesmo raciocínio
+    // da busca de usuários: volume baixo, não compensa nova query agora.
+    // ============================================================
+    @GetMapping("/public/search")
+    public List<Playlist> searchPublicPlaylists(@RequestParam String q) {
+        String query = q.toLowerCase();
+        return playlistRepository.findByIsPublicTrue().stream()
+                .filter(p -> p.getTitle() != null && p.getTitle().toLowerCase().contains(query))
+                .collect(Collectors.toList());
+    }
+
+    // ============================================================
+    // NOVO: PLAYLISTS PÚBLICAS DE UM USUÁRIO ESPECÍFICO
+    // Usado pela tela de perfil público (user-profile.html)
+    // ============================================================
+    @GetMapping("/user/{userId}")
+    public List<Playlist> getUserPublicPlaylists(@PathVariable Long userId) {
+        return playlistRepository.findByUserIdAndIsPublicTrue(userId);
+    }
+
+    // ============================================================
     // BUSCAR PLAYLIST POR ID
     // ============================================================
     @GetMapping("/{id}")
@@ -138,8 +160,6 @@ public class PlaylistController {
 
     // ============================================================
     // ADICIONAR MÚSICA À PLAYLIST
-    // (mantido como está — é o que album.js usa pra adicionar todas as
-    // faixas de um álbum de uma vez, uma chamada por faixa)
     // ============================================================
     @PostMapping("/{playlistId}/musics/{musicId}")
     public ResponseEntity<?> addMusicToPlaylist(@PathVariable Long playlistId, @PathVariable Long musicId) {
@@ -173,7 +193,7 @@ public class PlaylistController {
     }
 
     // ============================================================
-    // REMOVER MÚSICA DA PLAYLIST (mantido — remoção fina, se precisar)
+    // REMOVER MÚSICA DA PLAYLIST
     // ============================================================
     @DeleteMapping("/{playlistId}/musics/{musicId}")
     public ResponseEntity<?> removeMusicFromPlaylist(@PathVariable Long playlistId, @PathVariable Long musicId) {
@@ -200,8 +220,7 @@ public class PlaylistController {
     }
 
     // ============================================================
-    // LISTAR MÚSICAS DE UMA PLAYLIST (cru — mantido por compatibilidade,
-    // mas o frontend agora usa /albums abaixo)
+    // LISTAR MÚSICAS DE UMA PLAYLIST (cru — mantido por compatibilidade)
     // ============================================================
     @GetMapping("/{playlistId}/musics")
     public ResponseEntity<?> getPlaylistMusics(@PathVariable Long playlistId) {
@@ -219,11 +238,7 @@ public class PlaylistController {
     }
 
     // ============================================================
-    // NOVO: LISTAR ÁLBUNS DE UMA PLAYLIST (agrupado)
-    // A playlist guarda faixas (playlist_items -> music), mas a tela agora
-    // mostra e gerencia por ÁLBUM. Aqui a gente deduplica as faixas por
-    // album_id e devolve só os dados que a tela precisa pra exibir o card
-    // e montar o link pro Spotify.
+    // LISTAR ÁLBUNS DE UMA PLAYLIST (agrupado)
     // ============================================================
     @GetMapping("/{playlistId}/albums")
     @Transactional(readOnly = true)
@@ -261,8 +276,7 @@ public class PlaylistController {
     }
 
     // ============================================================
-    // NOVO: REMOVER UM ÁLBUM INTEIRO DA PLAYLIST
-    // Remove todas as faixas desse álbum que estão na playlist de uma vez.
+    // REMOVER UM ÁLBUM INTEIRO DA PLAYLIST
     // ============================================================
     @DeleteMapping("/{playlistId}/albums/{albumId}")
     public ResponseEntity<?> removeAlbumFromPlaylist(@PathVariable Long playlistId, @PathVariable Long albumId) {
@@ -305,7 +319,7 @@ public class PlaylistController {
 
     private User getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName(); // agora é o email
+        String email = auth.getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
