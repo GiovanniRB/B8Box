@@ -92,7 +92,19 @@ public class PlaylistController {
                     .body("❌ Esta playlist é privada!");
         }
 
-        return ResponseEntity.ok(playlist);
+        // Devolve um mapa (e não a entidade crua) porque Playlist.user tem
+        // @JsonIgnore — sem isso o frontend não tem como saber quem é o dono
+        // e acaba mostrando editar/apagar pra qualquer um que abrir a playlist.
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", playlist.getId());
+        result.put("title", playlist.getTitle());
+        result.put("description", playlist.getDescription());
+        result.put("isPublic", playlist.getIsPublic());
+        result.put("ownerId", playlist.getUser().getId());
+        result.put("ownerUsername", playlist.getUser().getUsername());
+        result.put("isOwner", playlist.getUser().getId().equals(user.getId()));
+
+        return ResponseEntity.ok(result);
     }
 
     // ============================================================

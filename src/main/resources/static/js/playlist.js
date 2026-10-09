@@ -28,9 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    loadPlaylist();
-    loadAlbums();
-
     document.getElementById('btn-edit-playlist').addEventListener('click', showEditForm);
     document.getElementById('btn-cancel-edit').addEventListener('click', hideEditForm);
     document.getElementById('btn-save-playlist').addEventListener('click', savePlaylist);
@@ -41,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem(USERNAME_KEY);
         window.location.href = '/';
     });
+
+    // MUDOU: os álbuns só carregam depois da playlist, porque o botão de
+    // remover álbum depende de saber se quem está vendo é o dono (isOwner).
+    loadPlaylist().then(loadAlbums);
 });
 
 async function loadPlaylist() {
@@ -63,13 +64,49 @@ function renderPlaylistHeader(playlist) {
     badge.innerHTML = playlist.isPublic
         ? '<i class="bi bi-globe2"></i> Pública'
         : '<i class="bi bi-lock-fill"></i> Privada';
+
+    // Só o dono vê Editar/Apagar. (O backend já recusa com 403 quem não é
+    // dono — aqui é só pra não oferecer botões que não vão funcionar.)
+    const isOwner = !!playlist.isOwner;
+    document.getElementById('btn-edit-playlist').classList.toggle('d-none', !isOwner);
+    document.getElementById('btn-delete-playlist').classList.toggle('d-none', !isOwner);
+    if (!isOwner) hideEditForm();
+
+    renderOwnerLine(playlist);
+}
+
+// "por @fulano", com link pro perfil público. Criado via DOM (textContent)
+// pra o username nunca ser interpretado como HTML.
+function renderOwnerLine(playlist) {
+    if (!playlist.ownerId) return;
+
+    let ownerEl = document.getElementById('playlist-owner');
+    if (!ownerEl) {
+        ownerEl = document.createElement('p');
+        ownerEl.id = 'playlist-owner';
+        ownerEl.className = 'small mb-2';
+        document.getElementById('playlist-description').insertAdjacentElement('afterend', ownerEl);
+    }
+
+    ownerEl.textContent = '';
+    const icon = document.createElement('i');
+    icon.className = 'bi bi-person';
+    ownerEl.appendChild(icon);
+    ownerEl.appendChild(document.createTextNode(' por '));
+
+    const link = document.createElement('a');
+    link.href = `user-profile.html?id=${playlist.ownerId}`;
+    link.className = 'text-primary text-decoration-none';
+    link.textContent = '@' + (playlist.ownerUsername || 'usuário');
+    ownerEl.appendChild(link);
 }
 
 // ============================================================
-// CARREGAR ÁLBUNS (usa endpoint NOVO /albums)
+// CARREGAR ÁLBUNS (usa endpoint /albums)
 // ============================================================
 async function loadAlbums() {
     const container = document.getElementById('track-list');
+    const isOwner = !!(currentPlaylist && currentPlaylist.isOwner);
 
     container.innerHTML = `
         <div class="text-center text-muted py-4">
@@ -88,7 +125,7 @@ async function loadAlbums() {
                 <div class="text-center text-muted py-4">
                     <i class="bi bi-collection" style="font-size: 2.5rem;"></i>
                     <p class="mt-3">Nenhum álbum nessa playlist ainda.</p>
-                    <p class="small">Adicione álbuns a partir da página de um álbum.</p>
+                    ${isOwner ? '<p class="small">Adicione álbuns a partir da página de um álbum.</p>' : ''}
                 </div>
             `;
             return;
@@ -96,7 +133,7 @@ async function loadAlbums() {
 
         container.innerHTML = `
             <div class="row g-3">
-                ${albums.map(a => renderAlbumCard(a)).join('')}
+                ${albums.map(a => renderAlbumCard(a, isOwner)).join('')}
             </div>
         `;
     } catch (err) {
@@ -105,7 +142,7 @@ async function loadAlbums() {
     }
 }
 
-function renderAlbumCard(album) {
+function renderAlbumCard(album, isOwner) {
     const cover = album.coverUrl || 'https://via.placeholder.com/300x300/cccccc/666666?text=Sem+Capa';
     const spotifyLink = album.spotifyId
         ? `https://open.spotify.com/album/${album.spotifyId}`
@@ -129,11 +166,13 @@ function renderAlbumCard(album) {
                                    <i class="bi bi-spotify"></i>
                                </a>`
                             : ''}
-                        <button class="btn btn-sm btn-outline-danger"
-                                onclick="removeAlbum(${album.id}, '${album.title.replace(/'/g, "\\'")}')"
-                                title="Remover da playlist">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        ${isOwner
+                            ? `<button class="btn btn-sm btn-outline-danger"
+                                       onclick="removeAlbum(${album.id}, '${album.title.replace(/'/g, "\\'")}')"
+                                       title="Remover da playlist">
+                                   <i class="bi bi-trash"></i>
+                               </button>`
+                            : ''}
                     </div>
                 </div>
             </div>
@@ -157,7 +196,7 @@ async function removeAlbum(albumId, albumTitle) {
 }
 
 // ============================================================
-// EDITAR / DELETAR PLAYLIST (mantido igual)
+// EDITAR / DELETAR PLAYLIST
 // ============================================================
 function showEditForm() {
     if (!currentPlaylist) return;
@@ -188,7 +227,11 @@ async function savePlaylist() {
             body: JSON.stringify({ title, description, isPublic })
         });
         if (!res.ok) throw new Error('Falha ao salvar playlist');
-        currentPlaylist = await res.json();
+        // MUDOU: o PUT devolve a playlist sem os campos de dono (isOwner,
+        // ownerId, ownerUsername), então mesclamos com o que já tínhamos
+        // em vez de substituir — senão os botões sumiriam depois de salvar.
+        const updated = await res.json();
+        currentPlaylist = { ...currentPlaylist, ...updated };
         renderPlaylistHeader(currentPlaylist);
         hideEditForm();
     } catch (err) {
