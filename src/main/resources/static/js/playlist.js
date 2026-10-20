@@ -19,9 +19,36 @@ function getParam(name) {
 
 const playlistId = getParam('id');
 let currentPlaylist = null;
+let currentAlbums = []; // álbuns na ordem atual (usado pra reordenar e remover)
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// O nome no topo vem de /users/me (o localStorage pode ter o e-mail, se o
+// login foi feito com e-mail) e já corrige o valor guardado.
+async function refreshNavUsername() {
+    try {
+        const res = await fetch(`${API_BASE}/users/me`, { headers: authHeaders() });
+        if (!res.ok) return;
+        const me = await res.json();
+        if (me.username) {
+            localStorage.setItem(USERNAME_KEY, me.username);
+            document.getElementById('user-name').innerText = me.username;
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('user-name').innerText = username || 'Usuário';
+    document.getElementById('user-name').innerText = (username && !username.includes('@')) ? username : '';
+    refreshNavUsername();
 
     if (!playlistId) {
         document.getElementById('playlist-title').innerText = 'Playlist não encontrada';
@@ -119,6 +146,7 @@ async function loadAlbums() {
         const res = await fetch(`${API_BASE}/playlists/${playlistId}/albums`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Falha ao carregar álbuns');
         const albums = await res.json();
+        currentAlbums = albums;
 
         if (!albums.length) {
             container.innerHTML = `
@@ -133,7 +161,7 @@ async function loadAlbums() {
 
         container.innerHTML = `
             <div class="row g-3">
-                ${albums.map(a => renderAlbumCard(a, isOwner)).join('')}
+                ${albums.map((a, i) => renderAlbumCard(a, isOwner, i, albums.length)).join('')}
             </div>
         `;
     } catch (err) {
@@ -142,33 +170,50 @@ async function loadAlbums() {
     }
 }
 
-function renderAlbumCard(album, isOwner) {
+function renderAlbumCard(album, isOwner, index, total) {
     const cover = album.coverUrl || 'https://via.placeholder.com/300x300/cccccc/666666?text=Sem+Capa';
     const spotifyLink = album.spotifyId
-        ? `https://open.spotify.com/album/${album.spotifyId}`
+        ? `https://open.spotify.com/album/${encodeURIComponent(album.spotifyId)}`
         : null;
+
+    // Setas pra mudar a posição do álbum na playlist (só o dono vê)
+    const reorderRow = isOwner && total > 1 ? `
+        <div class="d-flex justify-content-between mb-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="moveAlbum(${index}, -1)"
+                    title="Mover pra antes" ${index === 0 ? 'disabled' : ''}>
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <span class="text-muted small align-self-center">${index + 1}/${total}</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="moveAlbum(${index}, 1)"
+                    title="Mover pra depois" ${index === total - 1 ? 'disabled' : ''}>
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    ` : '';
 
     return `
         <div class="col-6 col-md-4 col-lg-3">
             <div class="card h-100 shadow-sm">
-                <img src="${cover}" class="card-img-top" alt="${album.title}"
+                <img src="${escapeHtml(cover)}" class="card-img-top" alt="${escapeHtml(album.title)}"
                      style="height: 180px; object-fit: cover;">
                 <div class="card-body d-flex flex-column p-2">
-                    <h6 class="card-title text-truncate mb-1" title="${album.title}">${album.title}</h6>
-                    <p class="card-text text-muted small mb-2 text-truncate">${album.artist}</p>
+                    <h6 class="card-title text-truncate mb-1" title="${escapeHtml(album.title)}">${escapeHtml(album.title)}</h6>
+                    <p class="card-text text-muted small mb-2 text-truncate">${escapeHtml(album.artist)}</p>
+
+                    ${reorderRow}
 
                     <div class="mt-auto d-flex gap-1">
                         <a href="/album-detail.html?id=${album.id}" class="btn btn-sm btn-outline-primary flex-fill" title="Abrir álbum">
                             <i class="bi bi-eye"></i>
                         </a>
                         ${spotifyLink
-                            ? `<a href="${spotifyLink}" target="_blank" class="btn btn-sm btn-outline-success" title="Abrir no Spotify">
+                            ? `<a href="${spotifyLink}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success" title="Abrir no Spotify">
                                    <i class="bi bi-spotify"></i>
                                </a>`
                             : ''}
                         ${isOwner
                             ? `<button class="btn btn-sm btn-outline-danger"
-                                       onclick="removeAlbum(${album.id}, '${album.title.replace(/'/g, "\\'")}')"
+                                       onclick="removeAlbum(${album.id})"
                                        title="Remover da playlist">
                                    <i class="bi bi-trash"></i>
                                </button>`
@@ -180,7 +225,31 @@ function renderAlbumCard(album, isOwner) {
     `;
 }
 
-async function removeAlbum(albumId, albumTitle) {
+// Troca o álbum de posição com o vizinho e grava a nova ordem no backend.
+async function moveAlbum(index, delta) {
+    const target = index + delta;
+    if (target < 0 || target >= currentAlbums.length) return;
+
+    const ids = currentAlbums.map(a => a.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+
+    try {
+        const res = await fetch(`${API_BASE}/playlists/${playlistId}/albums/order`, {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({ albumIds: ids })
+        });
+        if (!res.ok) throw new Error('Falha ao reordenar');
+        await loadAlbums();
+    } catch (err) {
+        console.error(err);
+        alert('Não foi possível mudar a ordem.');
+    }
+}
+
+async function removeAlbum(albumId) {
+    const album = currentAlbums.find(a => a.id === albumId);
+    const albumTitle = album ? album.title : 'este álbum';
     if (!confirm(`Remover "${albumTitle}" da playlist?`)) return;
     try {
         const res = await fetch(`${API_BASE}/playlists/${playlistId}/albums/${albumId}`, {

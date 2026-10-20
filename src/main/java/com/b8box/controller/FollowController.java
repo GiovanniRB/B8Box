@@ -9,10 +9,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/follows")
@@ -50,6 +54,7 @@ public class FollowController {
     // DEIXAR DE SEGUIR
     // ============================================================
     @DeleteMapping("/{userId}")
+    @Transactional  // deleteBy... derivado exige transação ativa
     public ResponseEntity<?> unfollow(@PathVariable Long userId) {
         User me = getAuthenticatedUser();
         followRepository.deleteByFollowerIdAndFollowedId(me.getId(), userId);
@@ -67,8 +72,52 @@ public class FollowController {
     }
 
     // ============================================================
+    // LISTA DE SEGUIDORES de um usuário (quem segue o userId)
+    // Cada item já diz se EU sigo aquela pessoa (followingByMe) e se a
+    // pessoa sou eu (isMe), pra tela montar o botão Seguir/Seguindo.
+    // ============================================================
+    @GetMapping("/{userId}/followers")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getFollowers(@PathVariable Long userId) {
+        User me = getAuthenticatedUser();
+        List<Map<String, Object>> result = followRepository.findByFollowedId(userId).stream()
+                .sorted(newestFirst())
+                .map(f -> toUserRow(f.getFollower(), me.getId()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
+    // ============================================================
+    // LISTA DE SEGUINDO de um usuário (quem o userId segue)
+    // ============================================================
+    @GetMapping("/{userId}/following")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getFollowing(@PathVariable Long userId) {
+        User me = getAuthenticatedUser();
+        List<Map<String, Object>> result = followRepository.findByFollowerId(userId).stream()
+                .sorted(newestFirst())
+                .map(f -> toUserRow(f.getFollowed(), me.getId()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
+    // ============================================================
     // AUXILIARES
     // ============================================================
+    private Comparator<Follow> newestFirst() {
+        return Comparator.comparing(Follow::getCreatedAt,
+                Comparator.nullsLast(Comparator.<java.time.LocalDateTime>reverseOrder()));
+    }
+
+    private Map<String, Object> toUserRow(User u, Long meId) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("id", u.getId());
+        row.put("username", u.getUsername());
+        row.put("isMe", u.getId().equals(meId));
+        row.put("followingByMe", followRepository.existsByFollowerIdAndFollowedId(meId, u.getId()));
+        return row;
+    }
+
     private Map<String, Object> buildStatus(Long targetUserId, Long meId) {
         Map<String, Object> result = new HashMap<>();
         result.put("followersCount", followRepository.countByFollowedId(targetUserId));

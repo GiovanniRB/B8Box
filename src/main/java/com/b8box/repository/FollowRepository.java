@@ -4,6 +4,7 @@ import com.b8box.model.Follow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,4 +14,6 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     long countByFollowedId(Long followedId);   // nº de seguidores de um usuário
     long countByFollowerId(Long followerId);   // nº de pessoas que um usuário segue
     void deleteByFollowerIdAndFollowedId(Long followerId, Long followedId);
+    List<Follow> findByFollowedId(Long followedId);   // quem segue o usuário X
+    List<Follow> findByFollowerId(Long followerId);   // quem o usuário X segue
 }

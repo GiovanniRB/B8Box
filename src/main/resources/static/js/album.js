@@ -229,18 +229,77 @@ async function addAlbumToPlaylist(playlistId, btnEl) {
     btnEl.innerHTML = 'Adicionando...';
 
     try {
-        await Promise.all(currentTrackIds.map(musicId =>
-            fetch(`${API_BASE}/playlists/${playlistId}/musics/${musicId}`, {
+        // Uma faixa por vez (em sequência): o backend calcula a posição de cada
+        // faixa pelo tamanho atual da playlist, então chamadas simultâneas
+        // acabavam gravando posições repetidas.
+        for (const musicId of currentTrackIds) {
+            const res = await fetch(`${API_BASE}/playlists/${playlistId}/musics/${musicId}`, {
                 method: 'POST',
                 headers: authHeaders()
-            })
-        ));
+            });
+            // 400 = a faixa já estava na playlist, não é erro de verdade
+            if (!res.ok && res.status !== 400) {
+                throw new Error('Falha ao adicionar a faixa ' + musicId);
+            }
+        }
         bootstrap.Modal.getInstance(document.getElementById('addToPlaylistModal')).hide();
     } catch (err) {
         console.error(err);
         alert('Não foi possível adicionar todas as faixas à playlist.');
         btnEl.disabled = false;
         btnEl.innerHTML = originalText;
+    }
+}
+
+// Textos escritos por usuários (resenha, nome) nunca devem ser inseridos
+// como HTML cru — senão alguém consegue injetar script na tela dos outros.
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Botão direto "Remover do perfil": só aparece quando você já avaliou o
+// álbum. Remover do perfil = apagar a sua avaliação (é ela que faz o álbum
+// aparecer em "Meus Álbuns").
+function syncRemoveFromProfileButton(rateBtn, hasRating) {
+    let btn = document.getElementById('btn-remove-profile');
+    if (!hasRating) {
+        if (btn) btn.remove();
+        return;
+    }
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'btn-remove-profile';
+        btn.type = 'button';
+        btn.className = 'btn-pill-outline';
+        btn.style.cssText = 'color: #f09595; border-color: rgba(240, 149, 149, 0.4);';
+        btn.innerHTML = '<i class="bi bi-bookmark-x"></i> Remover do perfil';
+        btn.addEventListener('click', removeFromProfile);
+        rateBtn.insertAdjacentElement('afterend', btn);
+    }
+}
+
+async function removeFromProfile() {
+    if (!currentUserRating) return;
+    if (!confirm('Remover este álbum do seu perfil? Sua nota e sua resenha serão apagadas.')) return;
+
+    const btn = document.getElementById('btn-remove-profile');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(`${API_BASE}/ratings/${currentUserRating.id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao remover do perfil');
+        await loadRatings();
+    } catch (err) {
+        console.error(err);
+        alert('Não foi possível remover o álbum do seu perfil.');
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -269,14 +328,15 @@ async function loadRatings() {
             yourSection.innerHTML = `
                 <div class="your-review-banner">
                     <div class="text-muted mb-1">Sua avaliação</div>
-                    <span class="star-rating">★ ${yourRating.score}</span>
-                    <p class="mb-0 mt-1">${yourRating.review || ''}</p>
+                    <span class="star-rating">★ ${escapeHtml(yourRating.score)}</span>
+                    <p class="mb-0 mt-1">${escapeHtml(yourRating.review)}</p>
                 </div>
             `;
         } else {
             rateBtn.innerHTML = '<i class="bi bi-star-fill"></i> Avaliar';
             yourSection.innerHTML = '';
         }
+        syncRemoveFromProfileButton(rateBtn, !!yourRating);
 
         const others = yourRating ? ratings.filter(r => r.id !== yourRating.id) : ratings;
         if (!others.length) {
@@ -286,17 +346,26 @@ async function loadRatings() {
 
         listEl.innerHTML = others.map(r => {
             const uname = r.username || 'Usuário';
-            const initial = uname.charAt(0).toUpperCase();
+            const initial = escapeHtml(uname.charAt(0).toUpperCase());
+            // O nome (e o avatar) levam pro perfil público de quem avaliou.
+            // Sem userId (não deveria acontecer) cai num texto simples.
+            const profileHref = r.userId != null ? `user-profile.html?id=${r.userId}` : null;
+            const nameHtml = profileHref
+                ? `<a href="${profileHref}" class="fw-semibold text-white text-decoration-none">@${escapeHtml(uname)}</a>`
+                : `<span class="fw-semibold">@${escapeHtml(uname)}</span>`;
+            const avatarHtml = profileHref
+                ? `<a href="${profileHref}" class="avatar-sm text-white text-decoration-none">${initial}</a>`
+                : `<div class="avatar-sm">${initial}</div>`;
             return `
                 <div class="card review-card">
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <div class="avatar-sm">${initial}</div>
+                        ${avatarHtml}
                         <div>
-                            <div class="fw-semibold">@${uname}</div>
-                            <span class="star-rating">★ ${r.score}</span>
+                            <div>${nameHtml}</div>
+                            <span class="star-rating">★ ${escapeHtml(r.score)}</span>
                         </div>
                     </div>
-                    <p class="mb-0 text-muted">${r.review || ''}</p>
+                    <p class="mb-0 text-muted">${escapeHtml(r.review)}</p>
                 </div>
             `;
         }).join('');

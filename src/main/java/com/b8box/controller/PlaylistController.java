@@ -17,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -264,7 +266,7 @@ public class PlaylistController {
                     .body("❌ Esta playlist é privada!");
         }
 
-        List<PlaylistItem> items = playlistItemRepository.findByPlaylistId(playlistId);
+        List<PlaylistItem> items = findItemsSorted(playlistId);
 
         Map<Long, Album> albumsById = new LinkedHashMap<>();
         for (PlaylistItem item : items) {
@@ -319,10 +321,78 @@ public class PlaylistController {
     }
 
     // ============================================================
+    // NOVO: REORDENAR OS ÁLBUNS DA PLAYLIST
+    // Recebe { "albumIds": [3, 1, 2] } na ordem desejada e regrava as
+    // posições das faixas de modo que cada álbum fique agrupado nessa ordem
+    // (dentro de cada álbum, a ordem original das faixas é mantida).
+    // Só o dono pode reordenar.
+    // ============================================================
+    @PutMapping("/{playlistId}/albums/order")
+    @Transactional
+    public ResponseEntity<?> reorderAlbums(@PathVariable Long playlistId,
+                                           @RequestBody Map<String, List<Long>> body) {
+        User user = getAuthenticatedUser();
+
+        Playlist playlist = playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new RuntimeException("Playlist não encontrada"));
+
+        if (!playlist.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("❌ Você não tem permissão para reordenar esta playlist!");
+        }
+
+        List<Long> albumIds = body.get("albumIds");
+        if (albumIds == null) {
+            return ResponseEntity.badRequest().body("❌ Envie a lista albumIds.");
+        }
+
+        // agrupa as faixas por álbum, já na ordem atual
+        Map<Long, List<PlaylistItem>> itemsByAlbum = new LinkedHashMap<>();
+        for (PlaylistItem item : findItemsSorted(playlistId)) {
+            Album album = item.getMusic().getAlbum();
+            if (album == null) continue;
+            itemsByAlbum.computeIfAbsent(album.getId(), k -> new ArrayList<>()).add(item);
+        }
+
+        int position = 1;
+        List<PlaylistItem> toSave = new ArrayList<>();
+
+        // 1º: os álbuns na ordem pedida
+        for (Long albumId : albumIds) {
+            List<PlaylistItem> group = itemsByAlbum.remove(albumId);
+            if (group == null) continue; // id que não está na playlist: ignora
+            for (PlaylistItem item : group) {
+                item.setPosition(position++);
+                toSave.add(item);
+            }
+        }
+        // 2º: qualquer álbum que não veio na lista vai pro final (nada se perde)
+        for (List<PlaylistItem> group : itemsByAlbum.values()) {
+            for (PlaylistItem item : group) {
+                item.setPosition(position++);
+                toSave.add(item);
+            }
+        }
+
+        playlistItemRepository.saveAll(toSave);
+        return ResponseEntity.ok("✅ Ordem atualizada!");
+    }
+
+    // ============================================================
     // MÉTODOS AUXILIARES
     // ============================================================
+    // Itens da playlist ordenados por posição (e por id como desempate).
+    private List<PlaylistItem> findItemsSorted(Long playlistId) {
+        return playlistItemRepository.findByPlaylistId(playlistId).stream()
+                .sorted(Comparator
+                        .comparing(PlaylistItem::getPosition, Comparator.nullsLast(Comparator.<Integer>naturalOrder()))
+                        .thenComparing(PlaylistItem::getId))
+                .collect(Collectors.toList());
+    }
+
     private void reorganizePositions(Long playlistId) {
-        List<PlaylistItem> remainingItems = playlistItemRepository.findByPlaylistId(playlistId);
+        // usa a lista ordenada: senão remover um álbum desfaria a ordem escolhida
+        List<PlaylistItem> remainingItems = findItemsSorted(playlistId);
         for (int i = 0; i < remainingItems.size(); i++) {
             remainingItems.get(i).setPosition(i + 1);
             playlistItemRepository.save(remainingItems.get(i));

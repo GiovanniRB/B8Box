@@ -166,6 +166,7 @@ public class AlbumController {
                 rdto.setScore(r.getScore());
                 rdto.setReview(r.getReview());
                 rdto.setUsername(r.getUser().getUsername());
+                rdto.setUserId(r.getUser().getId());
                 rdto.setCreatedAt(r.getCreatedAt().toString());
                 return rdto;
             })
