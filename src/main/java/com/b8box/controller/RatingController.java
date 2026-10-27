@@ -9,7 +9,9 @@ import com.b8box.repository.AlbumRepository;
 import com.b8box.repository.MusicRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
+import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -47,10 +49,9 @@ public class RatingController {
 
     // ============================================================
     // LISTAR AVALIAÇÕES DE UM ÁLBUM
-    // CORRIGIDO: antes devolvia List<Rating> crua — como Rating.user tem
-    // @JsonIgnore (pra não vazar a senha do User na serialização), o
-    // username nunca chegava no frontend. Agora devolve um DTO seguro
-    // com userId + username explícitos.
+    // Devolve um DTO (e não a entidade crua) porque Rating.user tem
+    // @JsonIgnore — pra não vazar a senha do User na serialização. O DTO
+    // leva userId + username explícitos.
     // ============================================================
     @GetMapping("/album/{albumId}")
     @Transactional(readOnly = true)
@@ -78,6 +79,14 @@ public class RatingController {
     public ResponseEntity<?> rateAlbum(@PathVariable Long albumId, @RequestBody Rating ratingRequest) {
         User user = getAuthenticatedUser();
 
+        // NOVO: o servidor valida a nota (0 a 10) e o tamanho da resenha — antes
+        // só o formulário limitava, e quem chamasse a API direto podia mandar
+        // nota 9999 e estragar a média do álbum.
+        String error = InputValidator.validateRating(ratingRequest.getScore(), ratingRequest.getReview());
+        if (error != null) {
+            return ResponseEntity.badRequest().body(error);
+        }
+
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
 
@@ -93,8 +102,13 @@ public class RatingController {
         rating.setAlbum(album);
         rating.setCreatedAt(java.time.LocalDateTime.now());
 
-        Rating saved = ratingRepository.save(rating);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
+        try {
+            Rating saved = ratingRepository.save(rating);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
+        } catch (DataIntegrityViolationException e) {
+            // dois cliques rápidos: a restrição única (usuário, álbum) barrou o segundo
+            return ResponseEntity.badRequest().body("❌ Você já avaliou este álbum!");
+        }
     }
 
     // ============================================================
@@ -103,6 +117,11 @@ public class RatingController {
     @PostMapping("/music/{musicId}")
     public ResponseEntity<?> rateMusic(@PathVariable Long musicId, @RequestBody Rating ratingRequest) {
         User user = getAuthenticatedUser();
+
+        String error = InputValidator.validateRating(ratingRequest.getScore(), ratingRequest.getReview());
+        if (error != null) {
+            return ResponseEntity.badRequest().body(error);
+        }
 
         Music music = musicRepository.findById(musicId)
                 .orElseThrow(() -> new RuntimeException("Música não encontrada"));
@@ -119,8 +138,12 @@ public class RatingController {
         rating.setMusic(music);
         rating.setCreatedAt(java.time.LocalDateTime.now());
 
-        Rating saved = ratingRepository.save(rating);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
+        try {
+            Rating saved = ratingRepository.save(rating);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toDto(saved));
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body("❌ Você já avaliou esta música!");
+        }
     }
 
     // ============================================================
@@ -129,6 +152,11 @@ public class RatingController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateRating(@PathVariable Long id, @RequestBody Rating ratingRequest) {
         User user = getAuthenticatedUser();
+
+        String error = InputValidator.validateRating(ratingRequest.getScore(), ratingRequest.getReview());
+        if (error != null) {
+            return ResponseEntity.badRequest().body(error);
+        }
 
         Rating rating = ratingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Avaliação não encontrada"));

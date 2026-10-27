@@ -8,6 +8,7 @@ import com.b8box.repository.FollowRepository;
 import com.b8box.repository.PlaylistRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
+import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -60,9 +61,16 @@ public class UserController {
         User user = getAuthenticatedUser();
 
         String newUsername = body.get("username");
+        if (newUsername != null) newUsername = newUsername.trim();
 
         if (newUsername != null && !newUsername.isBlank()
                 && !newUsername.equals(user.getUsername())) {
+
+            // mesmas regras do cadastro (sem "@", sem espaços, 3 a 30 caracteres)
+            String usernameError = InputValidator.validateUsername(newUsername);
+            if (usernameError != null) {
+                return ResponseEntity.badRequest().body(usernameError);
+            }
 
             if (userRepository.existsByUsername(newUsername)) {
                 return ResponseEntity.badRequest().body("❌ Username já está em uso!");
@@ -94,8 +102,9 @@ public class UserController {
             return ResponseEntity.badRequest().body("❌ Senha atual incorreta!");
         }
 
-        if (newPassword.length() < 6) {
-            return ResponseEntity.badRequest().body("❌ A nova senha deve ter pelo menos 6 caracteres!");
+        String passwordError = InputValidator.validatePassword(newPassword);
+        if (passwordError != null) {
+            return ResponseEntity.badRequest().body(passwordError);
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -112,6 +121,11 @@ public class UserController {
     @Transactional
     public ResponseEntity<?> deleteAccount() {
         User user = getAuthenticatedUser();
+        // A tabela follows aponta pra users sem cascade: sem apagar essas linhas
+        // antes, apagar a conta de quem tem seguidores (ou segue alguém) dava
+        // erro de chave estrangeira.
+        followRepository.deleteByFollowerId(user.getId());
+        followRepository.deleteByFollowedId(user.getId());
         userRepository.delete(user);
         return ResponseEntity.ok("✅ Conta deletada com sucesso!");
     }
@@ -124,7 +138,10 @@ public class UserController {
     @GetMapping("/search")
     @Transactional(readOnly = true)
     public List<UserSearchResultDTO> searchUsers(@RequestParam String q) {
-        String query = q.toLowerCase();
+        if (q == null || q.trim().length() < 2) {
+            return List.of();
+        }
+        String query = q.trim().toLowerCase();
         return userRepository.findAll().stream()
                 .filter(u -> u.getUsername() != null && u.getUsername().toLowerCase().contains(query))
                 .limit(20)

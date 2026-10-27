@@ -24,6 +24,20 @@ function hideMessage(element) {
     element.classList.add('d-none');
 }
 
+// O backend responde erros como TEXTO PURO (ex: "❌ Usuário ou senha
+// inválidos!") e sucessos como JSON. Chamar response.json() direto quebrava
+// nas mensagens de erro ("Unexpected token"). Aqui lemos como texto e
+// tentamos interpretar como JSON; se não der, devolvemos o próprio texto.
+async function readBody(response) {
+    const text = await response.text();
+    if (!text) return null;
+    try {
+        return JSON.parse(text);
+    } catch (_) {
+        return text;
+    }
+}
+
 // ============================================================
 // Função para alternar entre Login e Cadastro
 // ============================================================
@@ -73,10 +87,13 @@ async function handleLogin(event) {
             body: JSON.stringify({ username, password })
         });
         
-        const data = await response.json();
+        const data = await readBody(response);
         
         if (!response.ok) {
-            showMessage(messageArea, data || '❌ Usuário ou senha inválidos!', 'danger');
+            // 401 = credenciais erradas; 429 = muitas tentativas (a mensagem
+            // vem do servidor)
+            const msg = typeof data === 'string' ? data : '❌ Usuário ou senha inválidos!';
+            showMessage(messageArea, msg, 'danger');
             return;
         }
         
@@ -122,10 +139,12 @@ async function handleRegister(event) {
             body: JSON.stringify({ username, email, password })
         });
         
-        const data = await response.json();
+        const data = await readBody(response);
         
         if (!response.ok) {
-            showMessage(registerMessageArea, data || '❌ Erro ao criar conta!', 'danger');
+            // inclui as validações do servidor (username com @, e-mail inválido...)
+            const msg = typeof data === 'string' ? data : '❌ Erro ao criar conta!';
+            showMessage(registerMessageArea, msg, 'danger');
             return;
         }
         

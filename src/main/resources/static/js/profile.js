@@ -43,6 +43,25 @@ function showMessage(message, type = 'info') {
     setTimeout(() => messageArea.classList.add('d-none'), 5000);
 }
 
+// O backend responde erros como TEXTO PURO (ex: "❌ Username já está em
+// uso!") e sucessos como JSON. Chamar res.json() direto quebrava nas
+// mensagens de erro ("Unexpected token"). Lê como texto e tenta JSON.
+async function readBody(response) {
+    const text = await response.text();
+    if (!text) return null;
+    try {
+        return JSON.parse(text);
+    } catch (_) {
+        return text;
+    }
+}
+
+function clearSessionAndGoHome() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(USERNAME_KEY);
+    window.location.href = '/';
+}
+
 function formatDate(isoString) {
     if (!isoString) return '—';
     try {
@@ -63,6 +82,12 @@ function formatDate(isoString) {
 async function loadProfile() {
     try {
         const res = await fetch(`${API_BASE}/users/me`, { headers: authHeaders() });
+
+        // token expirado/inválido (a API responde 401 sem token válido)
+        if (res.status === 401 || res.status === 403) {
+            clearSessionAndGoHome();
+            return;
+        }
         if (!res.ok) throw new Error('Falha ao carregar perfil');
 
         const user = await res.json();
@@ -72,6 +97,7 @@ async function loadProfile() {
         profileEmail.textContent = user.email;
         profileCreated.textContent = formatDate(user.createdAt);
         userNameNav.textContent = user.username;
+        localStorage.setItem(USERNAME_KEY, user.username);
 
         // Formulário
         document.getElementById('input-username').value = user.username;
@@ -129,7 +155,7 @@ editForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ username: newUsername })
         });
 
-        const data = await res.json();
+        const data = await readBody(res);
 
         if (!res.ok) throw new Error(typeof data === 'string' ? data : 'Falha ao atualizar perfil');
 
@@ -174,7 +200,7 @@ passwordForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ currentPassword, newPassword })
         });
 
-        const data = await res.json();
+        const data = await readBody(res);
 
         if (!res.ok) throw new Error(typeof data === 'string' ? data : 'Falha ao alterar senha');
 
@@ -213,9 +239,7 @@ deleteBtn.addEventListener('click', async () => {
         }
 
         alert('✅ Conta apagada. Você será redirecionado.');
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(USERNAME_KEY);
-        window.location.href = '/';
+        clearSessionAndGoHome();
 
     } catch (err) {
         console.error(err);
@@ -226,15 +250,13 @@ deleteBtn.addEventListener('click', async () => {
 // ============================================================
 // LOGOUT
 // ============================================================
-document.getElementById('logout-btn').addEventListener('click', () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(USERNAME_KEY);
-    window.location.href = '/';
-});
+document.getElementById('logout-btn').addEventListener('click', clearSessionAndGoHome);
 
 // ============================================================
 // INIT
 // ============================================================
-userNameNav.textContent = username || 'Usuário';
+// Mostra o nome guardado só se não for um e-mail (loadProfile() confirma o
+// valor certo em seguida).
+userNameNav.textContent = (username && !username.includes('@')) ? username : '';
 loadProfile();
 loadStats();

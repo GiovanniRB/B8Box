@@ -14,6 +14,8 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     long countByFollowedId(Long followedId);   // nº de seguidores de um usuário
     long countByFollowerId(Long followerId);   // nº de pessoas que um usuário segue
     void deleteByFollowerIdAndFollowedId(Long followerId, Long followedId);
+    void deleteByFollowerId(Long followerId);   // usados ao apagar uma conta
+    void deleteByFollowedId(Long followedId);
     List<Follow> findByFollowedId(Long followedId);   // quem segue o usuário X
     List<Follow> findByFollowerId(Long followerId);   // quem o usuário X segue
 }
