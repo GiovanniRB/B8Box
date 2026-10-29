@@ -296,10 +296,6 @@ deleteBtn.addEventListener('click', async () => {
     }
 });
 
-// ============================================================
-// LOGOUT
-// ============================================================
-document.getElementById('logout-btn').addEventListener('click', clearSessionAndGoHome);
 
 // ============================================================
 // INIT

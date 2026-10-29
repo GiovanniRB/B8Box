@@ -63,6 +63,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/albums/**", "/api/musics/**").denyAll()
                 .requestMatchers(HttpMethod.DELETE, "/api/albums/**", "/api/musics/**").denyAll()
 
+                // 🔓 Home pública: só leitura (GET), sem login
+                .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
+
                 // 🔒 Qualquer outra requisição de API exige autenticação
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll() // Permite qualquer outra coisa (importante para o Spring Boot servir o front)

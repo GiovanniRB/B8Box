@@ -171,6 +171,74 @@
             </article>`;
     }
 
+    // ------------------------------------------------------------
+    // NAVBAR (igual em todas as páginas)
+    // Cada página tem só o marcador:
+    //   <nav class="navbar navbar-expand-lg" data-b8-navbar="explore"></nav>
+    // O valor diz qual link fica ativo: home, explore, dashboard, profile
+    // (ou vazio). O conteúdo depende de haver alguém logado.
+    // ------------------------------------------------------------
+    const TOKEN_KEY = 'b8box_token';
+    const USERNAME_KEY = 'b8box_username';
+
+    function isLoggedIn() {
+        return !!localStorage.getItem(TOKEN_KEY);
+    }
+
+    function logout() {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USERNAME_KEY);
+        window.location.href = '/';
+    }
+
+    function renderNavbar(nav) {
+        const active = nav.dataset.b8Navbar || '';
+        const link = (key, href, label) =>
+            `<a href="${href}" class="nav-link-ghost ${active === key ? 'active' : ''}"` +
+            `${active === key ? ' aria-current="page"' : ''}>${label}</a>`;
+
+        let right;
+        if (isLoggedIn()) {
+            // o nome guardado pode ser o e-mail (login com e-mail): nesse caso
+            // fica vazio até a página confirmar o username em /users/me
+            const stored = localStorage.getItem(USERNAME_KEY) || '';
+            const shownName = stored.includes('@') ? '' : stored;
+            right = `
+                ${link('home', '/', 'Início')}
+                ${link('explore', '/explore.html', 'Explorar')}
+                ${link('dashboard', '/dashboard.html', 'Dashboard')}
+                <a href="/profile.html" class="navbar-text text-white text-decoration-none ${active === 'profile' ? 'active' : ''}" title="Configurar perfil">
+                    <i class="bi bi-person-circle" aria-hidden="true"></i> <span id="user-name">${escapeHtml(shownName)}</span>
+                </a>
+                <button type="button" class="btn-pill-outline btn-sm" id="logout-btn"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair</button>`;
+        } else {
+            // "Explorar" e "Entrar" abrem o modal de login (só existe na home;
+            // nas outras páginas o link leva para a home)
+            right = `
+                ${link('home', '/', 'Início')}
+                <a href="/" class="nav-link-ghost" data-b8-login>Explorar</a>
+                <a href="/" class="btn-pill-outline" data-b8-login>Entrar</a>`;
+        }
+
+        nav.innerHTML = `
+            <div class="container-fluid px-5">
+                <a class="navbar-brand" href="/"><i class="bi bi-music-note-beamed" aria-hidden="true"></i> B8Box</a>
+                <div class="d-flex align-items-center gap-3">${right}</div>
+            </div>`;
+
+        const logoutBtn = nav.querySelector('#logout-btn');
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+        nav.querySelectorAll('[data-b8-login]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const modal = document.getElementById('loginModal');
+                if (!modal || !window.bootstrap) return; // segue o link para a home
+                e.preventDefault();
+                bootstrap.Modal.getOrCreateInstance(modal).show();
+            });
+        });
+    }
+
     window.B8 = {
         escapeHtml,
         timeAgo,
@@ -178,6 +246,15 @@
         likeButtonHtml,
         likeCountHtml,
         bindLikeButtons,
-        renderFeedItem
+        renderFeedItem,
+        isLoggedIn,
+        logout,
+        renderNavbar
     };
+
+    // Desenha a navbar já ao carregar o ui.js (ele vem no fim do <body>,
+    // então o marcador já existe e os scripts das páginas, que vêm depois,
+    // já encontram #user-name e #logout-btn).
+    const navMarker = document.querySelector('[data-b8-navbar]');
+    if (navMarker) renderNavbar(navMarker);
 })();

@@ -1,9 +1,13 @@
 package com.b8box.repository;
 
 import com.b8box.model.Rating;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -21,4 +25,14 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
 
     // Perfil público: últimas avaliações de álbuns de um usuário.
     List<Rating> findTop30ByUserIdAndAlbumIsNotNullOrderByCreatedAtDesc(Long userId);
+
+    // Home: últimas avaliações de álbuns de qualquer usuário.
+    List<Rating> findTop20ByAlbumIsNotNullOrderByCreatedAtDesc();
+
+    // Home: álbuns mais avaliados desde uma data (empate: maior média).
+    // Cada linha: [albumId (Long), quantidade (Long), média (Double)].
+    @Query("select r.album.id, count(r), avg(r.score) from Rating r " +
+           "where r.album is not null and r.createdAt >= :since " +
+           "group by r.album.id order by count(r) desc, avg(r.score) desc")
+    List<Object[]> findMostRatedAlbumsSince(@Param("since") LocalDateTime since, Pageable pageable);
 }

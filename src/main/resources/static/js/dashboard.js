@@ -577,15 +577,6 @@ function viewPlaylist(playlistId) {
 }
 
 // ============================================================
-// LOGOUT
-// ============================================================
-document.getElementById('logout-btn').addEventListener('click', function() {
-    localStorage.removeItem('b8box_token');
-    localStorage.removeItem('b8box_username');
-    window.location.href = '/';
-});
-
-// ============================================================
 // INIT
 // ============================================================
 // Mostra o nome guardado só se não for um e-mail (evita piscar o e-mail

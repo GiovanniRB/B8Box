@@ -60,12 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-save-playlist').addEventListener('click', savePlaylist);
     document.getElementById('btn-delete-playlist').addEventListener('click', deletePlaylist);
 
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(USERNAME_KEY);
-        window.location.href = '/';
-    });
-
     // MUDOU: os álbuns só carregam depois da playlist, porque o botão de
     // remover álbum depende de saber se quem está vendo é o dono (isOwner).
     loadPlaylist().then(loadAlbums);

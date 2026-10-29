@@ -178,12 +178,6 @@ function emptyState(message) {
     return `<div class="col-12 text-center text-muted py-5"><p>${message}</p></div>`;
 }
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-    localStorage.removeItem('b8box_token');
-    localStorage.removeItem('b8box_username');
-    window.location.href = '/';
-});
-
 
 // ============================================================
 // BUSCAS RECENTES (guardadas no navegador, últimas 5)

@@ -32,14 +32,8 @@ let isOwnProfile = false;
 let isFollowing = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('nav-user-name').innerText =
+    document.getElementById('user-name').innerText =
         (myStoredUsername && !myStoredUsername.includes('@')) ? myStoredUsername : '';
-
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(USERNAME_KEY);
-        window.location.href = '/';
-    });
 
     if (!profileUserId) {
         document.getElementById('profile-username').innerText = 'Usuário não encontrado';
@@ -71,7 +65,7 @@ async function loadMe() {
         myId = me.id ?? null;
         if (me.username) {
             localStorage.setItem(USERNAME_KEY, me.username);
-            document.getElementById('nav-user-name').innerText = me.username;
+            document.getElementById('user-name').innerText = me.username;
         }
     } catch (err) {
         console.error(err);

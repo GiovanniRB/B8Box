@@ -97,14 +97,15 @@ async function handleLogin(event) {
             return;
         }
         
-        // ✅ Sucesso! Salva o token e redireciona
+        // ✅ Sucesso! Salva o token e recarrega a home, que agora mostra a
+        // versão logada (aba "Seguindo")
         localStorage.setItem('b8box_token', data.token);
         localStorage.setItem('b8box_username', data.username);
         showMessage(messageArea, '✅ Login realizado com sucesso!', 'success');
-        
+
         setTimeout(() => {
-            window.location.href = '/dashboard.html'; // Vamos criar esta página depois
-        }, 1500);
+            window.location.href = '/';
+        }, 800);
         
     } catch (error) {
         showMessage(messageArea, `❌ Erro ao conectar com o servidor: ${error.message}`, 'danger');

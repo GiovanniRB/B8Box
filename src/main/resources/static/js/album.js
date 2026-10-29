@@ -65,15 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             paintStars(star.dataset.value);
         });
     });
-
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem(AUTH_TOKEN_KEY);
-            localStorage.removeItem(USERNAME_KEY);
-            window.location.href = '/';
-        });
-    }
+    // (o botão "Sair" da navbar é tratado no ui.js)
 });
 
 function paintStars(value) {
