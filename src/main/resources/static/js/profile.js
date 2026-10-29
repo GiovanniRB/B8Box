@@ -99,14 +99,52 @@ async function loadProfile() {
         userNameNav.textContent = user.username;
         localStorage.setItem(USERNAME_KEY, user.username);
 
+        renderBioAndGenres(user);
+
         // Formulário
         document.getElementById('input-username').value = user.username;
         document.getElementById('input-email').value = user.email;
+        document.getElementById('input-bio').value = user.bio || '';
+        document.getElementById('input-genres').value = (user.favoriteGenres || []).join(', ');
+        updateBioCount();
 
     } catch (err) {
         console.error(err);
         showMessage('❌ Não foi possível carregar o perfil.', 'danger');
     }
+}
+
+// Bio e gêneros no cabeçalho do perfil
+function renderBioAndGenres(user) {
+    const bioEl = document.getElementById('profile-bio');
+    bioEl.textContent = user.bio || '';
+    bioEl.classList.toggle('d-none', !user.bio);
+    B8.renderGenreChips(document.getElementById('profile-genres'), user.favoriteGenres || []);
+}
+
+function updateBioCount() {
+    document.getElementById('bio-count').textContent = document.getElementById('input-bio').value.length;
+}
+document.getElementById('input-bio').addEventListener('input', updateBioCount);
+
+// "Indie pop, Grunge,, MPB " -> ["Indie pop", "Grunge", "MPB"]
+// (o servidor também limpa e valida; isto só dá o aviso mais cedo)
+function parseGenres(text) {
+    const seen = new Set();
+    const out = [];
+    text.split(',').forEach(part => {
+        const g = part.trim().replace(/\s+/g, ' ');
+        if (g && !seen.has(g.toLowerCase())) {
+            seen.add(g.toLowerCase());
+            out.push(g);
+        }
+    });
+    return out;
+}
+
+// As mensagens do servidor já começam com "❌"; evita mostrar "❌ ❌".
+function errorText(message) {
+    return String(message || '').startsWith('❌') ? message : `❌ ${message}`;
 }
 
 // ============================================================
@@ -141,10 +179,19 @@ editForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const newUsername = document.getElementById('input-username').value.trim();
-    const newEmail = document.getElementById('input-email').value.trim();
+    const newBio = document.getElementById('input-bio').value.trim();
+    const newGenres = parseGenres(document.getElementById('input-genres').value);
 
-    if (!newUsername || !newEmail) {
-        showMessage('❌ Preencha todos os campos.', 'warning');
+    if (!newUsername) {
+        showMessage('❌ O nome de usuário é obrigatório.', 'warning');
+        return;
+    }
+    if (newGenres.length > 5) {
+        showMessage('❌ Escolha no máximo 5 gêneros favoritos.', 'warning');
+        return;
+    }
+    if (newGenres.some(g => g.length > 30)) {
+        showMessage('❌ Cada gênero pode ter no máximo 30 caracteres.', 'warning');
         return;
     }
 
@@ -152,7 +199,7 @@ editForm.addEventListener('submit', async (e) => {
         const res = await fetch(`${API_BASE}/users/me`, {
             method: 'PUT',
             headers: authHeaders(),
-            body: JSON.stringify({ username: newUsername })
+            body: JSON.stringify({ username: newUsername, bio: newBio, favoriteGenres: newGenres })
         });
 
         const data = await readBody(res);
@@ -164,12 +211,14 @@ editForm.addEventListener('submit', async (e) => {
         userNameNav.textContent = data.username;
         profileUsername.textContent = data.username;
         profileEmail.textContent = data.email;
+        renderBioAndGenres(data);
+        document.getElementById('input-genres').value = (data.favoriteGenres || []).join(', ');
 
         showMessage('✅ Perfil atualizado com sucesso!', 'success');
 
     } catch (err) {
         console.error(err);
-        showMessage(`❌ ${err.message}`, 'danger');
+        showMessage(errorText(err.message), 'danger');
     }
 });
 

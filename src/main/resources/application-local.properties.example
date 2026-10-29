@@ -1,0 +1,17 @@
+# Modelo do application-local.properties.
+# Copie este arquivo para application-local.properties (que NAO vai pro Git)
+# e preencha com os seus valores reais.
+
+DB_URL=jdbc:postgresql://SEU-HOST.aivencloud.com:PORTA/defaultdb?sslmode=require
+DB_USERNAME=SEU_USUARIO
+DB_PASSWORD=SUA_SENHA_DO_BANCO
+
+# chave aleatória longa (veja o comando pra gerar no README)
+JWT_SECRET=GERE_UMA_CHAVE_ALEATORIA_LONGA
+
+SPOTIFY_CLIENT_ID=SEU_CLIENT_ID
+SPOTIFY_CLIENT_SECRET=SEU_CLIENT_SECRET
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:8080/api/spotify/callback
+
+# só em desenvolvimento: mostra as queries SQL no console
+SHOW_SQL=true

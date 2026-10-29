@@ -21,7 +21,22 @@ public class User {
     private String email;
  
     @Column(nullable = false)
+    @JsonIgnore // o hash da senha nunca deve sair em JSON
     private String password;
+
+    // Bio curta exibida no perfil (opcional)
+    @Column(length = 300)
+    private String bio;
+
+    // Gêneros favoritos (até 5). Ficam numa tabela própria
+    // (user_favorite_genres: user_id, position, genre) em vez de uma lista
+    // separada por vírgulas numa coluna só — assim o banco continua
+    // normalizado (1FN) e a ordem escolhida pelo usuário é preservada.
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_favorite_genres", joinColumns = @JoinColumn(name = "user_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "genre", length = 30, nullable = false)
+    private List<String> favoriteGenres = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -78,6 +93,27 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public List<String> getFavoriteGenres() {
+        return favoriteGenres;
+    }
+
+    // Altera a coleção que o Hibernate já gerencia (clear + addAll) em vez
+    // de trocar a referência da lista.
+    public void setFavoriteGenres(List<String> genres) {
+        this.favoriteGenres.clear();
+        if (genres != null) {
+            this.favoriteGenres.addAll(genres);
+        }
     }
 
     public LocalDateTime getCreatedAt() {

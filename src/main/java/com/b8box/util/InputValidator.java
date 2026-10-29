@@ -1,6 +1,11 @@
 package com.b8box.util;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -19,6 +24,13 @@ public final class InputValidator {
     // O BCrypt só considera os primeiros 72 bytes da senha
     public static final int MAX_PASSWORD_BYTES = 72;
     public static final int MAX_REVIEW_LENGTH = 5000;
+    public static final int MAX_BIO_LENGTH = 300;
+    public static final int MAX_GENRES = 5;
+    public static final int MAX_GENRE_LENGTH = 30;
+
+    // Gênero: letras (com acento), números, espaço e & / ' . + -
+    // (cobre "Hip-Hop", "R&B", "Rock 'n' Roll", "Lo-fi", "MPB").
+    private static final Pattern GENRE = Pattern.compile("^[\\p{L}\\p{N} &/'.+-]{1," + MAX_GENRE_LENGTH + "}$");
 
     private InputValidator() {}
 
@@ -52,6 +64,46 @@ public final class InputValidator {
         }
         if (review != null && review.length() > MAX_REVIEW_LENGTH) {
             return "❌ A resenha pode ter no máximo " + MAX_REVIEW_LENGTH + " caracteres.";
+        }
+        return null;
+    }
+
+    public static String validateBio(String bio) {
+        if (bio != null && bio.length() > MAX_BIO_LENGTH) {
+            return "❌ A bio pode ter no máximo " + MAX_BIO_LENGTH + " caracteres.";
+        }
+        return null;
+    }
+
+    /**
+     * Limpa a lista de gêneros vinda do formulário: tira espaços das pontas,
+     * junta espaços repetidos, descarta itens vazios e repetidos (sem
+     * diferenciar maiúsculas de minúsculas), mantendo a ordem digitada.
+     */
+    public static List<String> normalizeGenres(List<String> genres) {
+        Map<String, String> unique = new LinkedHashMap<>();
+        if (genres != null) {
+            for (String g : genres) {
+                if (g == null) continue;
+                String clean = g.trim().replaceAll("\\s+", " ");
+                if (clean.isEmpty()) continue;
+                unique.putIfAbsent(clean.toLowerCase(Locale.ROOT), clean);
+            }
+        }
+        return new ArrayList<>(unique.values());
+    }
+
+    /** Valida a lista JÁ normalizada (ver normalizeGenres). */
+    public static String validateGenres(List<String> genres) {
+        if (genres == null) return null;
+        if (genres.size() > MAX_GENRES) {
+            return "❌ Escolha no máximo " + MAX_GENRES + " gêneros favoritos.";
+        }
+        for (String g : genres) {
+            if (!GENRE.matcher(g).matches()) {
+                return "❌ Gênero inválido: \"" + g + "\". Use até " + MAX_GENRE_LENGTH
+                        + " caracteres (letras, números, espaço e & / ' . + -).";
+            }
         }
         return null;
     }

@@ -51,7 +51,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadMe(); // precisa do meu id pra saber se este perfil é o meu
     await loadProfile();
+    loadRatings();
     loadPlaylists();
+    B8.bindLikeButtons(document.getElementById('ratings-list'), authHeaders);
 
     // vindo do dashboard (?list=followers|following): já abre a lista
     const list = getParam('list');
@@ -97,6 +99,12 @@ async function loadProfile() {
             document.getElementById('profile-since').innerText =
                 'Na B8Box desde ' + date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
         }
+
+        // Bio e gêneros favoritos (texto via textContent: nada vira HTML)
+        const bioEl = document.getElementById('profile-bio');
+        bioEl.textContent = profile.bio || '';
+        bioEl.classList.toggle('d-none', !profile.bio);
+        B8.renderGenreChips(document.getElementById('profile-genres'), profile.favoriteGenres || []);
 
         document.getElementById('stat-followers').innerText = profile.followersCount;
         document.getElementById('stat-following').innerText = profile.followingCount;
@@ -292,6 +300,27 @@ async function toggleRowFollow(u, btn) {
         alert('Não foi possível atualizar. Tente de novo.');
     }
     btn.disabled = false;
+}
+
+// ============================================================
+// AVALIAÇÕES RECENTES (mesmo cartão do feed)
+// ============================================================
+async function loadRatings() {
+    const list = document.getElementById('ratings-list');
+    try {
+        const res = await fetch(`${API_BASE}/users/${profileUserId}/ratings`, { headers: authHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar as avaliações');
+        const items = await res.json();
+
+        if (!items.length) {
+            list.innerHTML = '<div class="text-center text-muted py-4">Nenhuma avaliação ainda.</div>';
+            return;
+        }
+        list.innerHTML = items.map(it => B8.renderFeedItem(it, myId)).join('');
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = '<div class="text-center text-muted py-4">Não foi possível carregar as avaliações.</div>';
+    }
 }
 
 // ============================================================

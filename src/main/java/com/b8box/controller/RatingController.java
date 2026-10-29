@@ -9,6 +9,7 @@ import com.b8box.repository.AlbumRepository;
 import com.b8box.repository.MusicRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
+import com.b8box.service.LikeService;
 import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,6 +40,9 @@ public class RatingController {
 
     @Autowired
     private MusicRepository musicRepository;
+
+    @Autowired
+    private LikeService likeService;
 
     // ============================================================
     // LISTAR AVALIAÇÕES DO USUÁRIO LOGADO
@@ -56,8 +62,21 @@ public class RatingController {
     @GetMapping("/album/{albumId}")
     @Transactional(readOnly = true)
     public List<RatingResponseDTO> getRatingsByAlbum(@PathVariable Long albumId) {
-        return ratingRepository.findByAlbumId(albumId).stream()
-                .map(this::toDto)
+        User me = getAuthenticatedUser();
+        List<Rating> ratings = ratingRepository.findByAlbumId(albumId);
+
+        // curtidas de todas as avaliações do álbum em duas consultas
+        List<Long> ids = ratings.stream().map(Rating::getId).collect(Collectors.toList());
+        Map<Long, Long> counts = likeService.countFor(ids);
+        Set<Long> liked = likeService.likedBy(me.getId(), ids);
+
+        return ratings.stream()
+                .map(r -> {
+                    RatingResponseDTO dto = toDto(r);
+                    dto.setLikesCount(counts.getOrDefault(r.getId(), 0L));
+                    dto.setLikedByMe(liked.contains(r.getId()));
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -191,6 +210,34 @@ public class RatingController {
 
         ratingRepository.delete(rating);
         return ResponseEntity.ok("✅ Avaliação deletada com sucesso!");
+    }
+
+    // ============================================================
+    // CURTIR / DESCURTIR UMA AVALIAÇÃO
+    // Respondem { likesCount, likedByMe }. Repetir a ação não dá erro.
+    // ============================================================
+    @PostMapping("/{id}/like")
+    public ResponseEntity<?> likeRating(@PathVariable Long id) {
+        User user = getAuthenticatedUser();
+        Rating rating = ratingRepository.findById(id).orElse(null);
+        if (rating == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (rating.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.badRequest().body("❌ Você não pode curtir a sua própria avaliação.");
+        }
+        likeService.like(user, rating);
+        return ResponseEntity.ok(likeService.status(id, user.getId()));
+    }
+
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<?> unlikeRating(@PathVariable Long id) {
+        User user = getAuthenticatedUser();
+        if (!ratingRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        likeService.unlike(user.getId(), id);
+        return ResponseEntity.ok(likeService.status(id, user.getId()));
     }
 
     // ============================================================

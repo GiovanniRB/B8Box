@@ -7,6 +7,8 @@ public class RatingResponseDTO {
     private Long userId;
     private String username;
     private String createdAt;
+    private long likesCount;
+    private boolean likedByMe;
 
     public RatingResponseDTO() {}
 
@@ -65,5 +67,21 @@ public class RatingResponseDTO {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public long getLikesCount() {
+        return likesCount;
+    }
+
+    public void setLikesCount(long likesCount) {
+        this.likesCount = likesCount;
+    }
+
+    public boolean isLikedByMe() {
+        return likedByMe;
+    }
+
+    public void setLikedByMe(boolean likedByMe) {
+        this.likedByMe = likedByMe;
     }
 }

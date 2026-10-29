@@ -6,6 +6,7 @@ import com.b8box.dto.UserSearchResultDTO;
 import com.b8box.model.User;
 import com.b8box.repository.FollowRepository;
 import com.b8box.repository.PlaylistRepository;
+import com.b8box.repository.RatingLikeRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
 import com.b8box.util.InputValidator;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +44,13 @@ public class UserController {
     @Autowired
     private FollowRepository followRepository;
 
+    @Autowired
+    private RatingLikeRepository ratingLikeRepository;
+
+    // Corpo do PUT /api/users/me. Campos nulos = "não alterar" (assim um
+    // cliente que só manda o username continua funcionando).
+    public record UpdateProfileRequest(String username, String bio, List<String> favoriteGenres) {}
+
     // ============================================================
     // PERFIL (o meu, autenticado)
     // ============================================================
@@ -53,33 +62,62 @@ public class UserController {
     }
 
     // ============================================================
-    // ATUALIZAR PERFIL (só username — email é imutável)
+    // ATUALIZAR PERFIL (username, bio e gêneros favoritos — email é imutável)
+    // Tudo é VALIDADO antes de qualquer alteração na entidade: como o método
+    // é @Transactional, mexer em um campo e depois devolver 400 por causa de
+    // outro faria o Hibernate gravar a mudança parcial mesmo assim.
     // ============================================================
     @PutMapping("/me")
     @Transactional
-    public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest body) {
         User user = getAuthenticatedUser();
 
-        String newUsername = body.get("username");
-        if (newUsername != null) newUsername = newUsername.trim();
-
-        if (newUsername != null && !newUsername.isBlank()
-                && !newUsername.equals(user.getUsername())) {
-
+        // ---------- 1. validar ----------
+        String newUsername = body.username() == null ? null : body.username().trim();
+        boolean changeUsername = newUsername != null && !newUsername.isBlank()
+                && !newUsername.equals(user.getUsername());
+        if (changeUsername) {
             // mesmas regras do cadastro (sem "@", sem espaços, 3 a 30 caracteres)
             String usernameError = InputValidator.validateUsername(newUsername);
             if (usernameError != null) {
                 return ResponseEntity.badRequest().body(usernameError);
             }
-
             if (userRepository.existsByUsername(newUsername)) {
                 return ResponseEntity.badRequest().body("❌ Username já está em uso!");
             }
-            user.setUsername(newUsername);
-            user.setUpdatedAt(LocalDateTime.now());
-            userRepository.save(user);
         }
 
+        String newBio = body.bio() == null ? null : body.bio().trim();
+        if (newBio != null) {
+            String bioError = InputValidator.validateBio(newBio);
+            if (bioError != null) {
+                return ResponseEntity.badRequest().body(bioError);
+            }
+        }
+
+        List<String> newGenres = null;
+        if (body.favoriteGenres() != null) {
+            newGenres = InputValidator.normalizeGenres(body.favoriteGenres());
+            String genresError = InputValidator.validateGenres(newGenres);
+            if (genresError != null) {
+                return ResponseEntity.badRequest().body(genresError);
+            }
+        }
+
+        // ---------- 2. aplicar ----------
+        if (changeUsername) {
+            user.setUsername(newUsername);
+        }
+        if (newBio != null) {
+            user.setBio(newBio.isEmpty() ? null : newBio);
+        }
+        if (newGenres != null) {
+            user.setFavoriteGenres(newGenres);
+        }
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // ⚠️ Email NÃO é atualizado (imutável)
         return ResponseEntity.ok(UserProfileDTO.fromEntity(user));
     }
 
@@ -126,6 +164,9 @@ public class UserController {
         // erro de chave estrangeira.
         followRepository.deleteByFollowerId(user.getId());
         followRepository.deleteByFollowedId(user.getId());
+        // Curtidas que a pessoa deu em avaliações de OUTROS usuários (as curtidas
+        // recebidas nas avaliações dela somem junto com as avaliações).
+        ratingLikeRepository.deleteByUserId(user.getId());
         userRepository.delete(user);
         return ResponseEntity.ok("✅ Conta deletada com sucesso!");
     }
@@ -172,6 +213,8 @@ public class UserController {
         UserPublicProfileDTO dto = new UserPublicProfileDTO();
         dto.setId(target.getId());
         dto.setUsername(target.getUsername());
+        dto.setBio(target.getBio());
+        dto.setFavoriteGenres(new ArrayList<>(target.getFavoriteGenres()));
         dto.setCreatedAt(target.getCreatedAt() != null ? target.getCreatedAt().toString() : null);
         dto.setAlbumsCount(albumsCount);
         dto.setPublicPlaylistsCount(publicPlaylistsCount);

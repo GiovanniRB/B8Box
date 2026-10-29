@@ -2,12 +2,16 @@ package com.b8box.dto;
 
 import com.b8box.model.User;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserProfileDTO {
 
     private Long id;
     private String username;
     private String email;
+    private String bio;
+    private List<String> favoriteGenres = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -18,6 +22,8 @@ public class UserProfileDTO {
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
+        dto.setBio(user.getBio());
+        dto.setFavoriteGenres(new ArrayList<>(user.getFavoriteGenres()));
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;
@@ -31,6 +37,12 @@ public class UserProfileDTO {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
+    public List<String> getFavoriteGenres() { return favoriteGenres; }
+    public void setFavoriteGenres(List<String> favoriteGenres) { this.favoriteGenres = favoriteGenres; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

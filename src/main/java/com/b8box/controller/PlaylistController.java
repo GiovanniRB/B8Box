@@ -155,6 +155,7 @@ public class PlaylistController {
     // DELETAR PLAYLIST
     // ============================================================
     @DeleteMapping("/{id}")
+    @Transactional // deleteByPlaylistId (consulta derivada) exige transação ativa
     public ResponseEntity<?> deletePlaylist(@PathVariable Long id) {
         User user = getAuthenticatedUser();
 
@@ -210,6 +211,7 @@ public class PlaylistController {
     // REMOVER MÚSICA DA PLAYLIST
     // ============================================================
     @DeleteMapping("/{playlistId}/musics/{musicId}")
+    @Transactional // remove e renumera as posições numa operação só
     public ResponseEntity<?> removeMusicFromPlaylist(@PathVariable Long playlistId, @PathVariable Long musicId) {
         User user = getAuthenticatedUser();
 
@@ -293,6 +295,7 @@ public class PlaylistController {
     // REMOVER UM ÁLBUM INTEIRO DA PLAYLIST
     // ============================================================
     @DeleteMapping("/{playlistId}/albums/{albumId}")
+    @Transactional // remove e renumera as posições numa operação só
     public ResponseEntity<?> removeAlbumFromPlaylist(@PathVariable Long playlistId, @PathVariable Long albumId) {
         User user = getAuthenticatedUser();
 

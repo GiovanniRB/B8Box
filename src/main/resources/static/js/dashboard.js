@@ -88,6 +88,13 @@ let myAlbums = [];
 let sortMode = 'recent';
 let filterText = '';
 
+// Cada aba (Álbuns, Playlists, Feed) busca dados na API. Se o usuário trocar
+// de aba antes da resposta chegar, a resposta atrasada NÃO pode desenhar por
+// cima da aba nova. Cada carregamento recebe um número; só o mais recente desenha.
+let tabLoadSeq = 0;
+function startTabLoad() { return ++tabLoadSeq; }
+function isStale(seq) { return seq !== tabLoadSeq; }
+
 // A minha avaliação dentro de um álbum (o DTO traz as avaliações de todo
 // mundo; a minha é a que tem o meu userId).
 function getMyRating(album) {
@@ -184,12 +191,14 @@ function renderAlbumsGrid() {
 // MUDOU: /api/albums (todos os álbuns, de todo mundo) -> /api/albums/me
 // (só os álbuns em que EU tenho avaliação — mecânica estilo Letterboxd).
 async function loadMyAlbums() {
+    const seq = startTabLoad();
     try {
         const me = await meReady;
         myId = me && me.id != null ? me.id : null;
 
         const response = await fetch(`${API_BASE}/albums/me`, { headers: getHeaders() });
         const albums = await response.json();
+        if (isStale(seq)) return; // o usuário já foi pra outra aba
 
         if (!response.ok) throw new Error(albums.message || 'Erro ao carregar álbuns');
         myAlbums = albums;
@@ -232,6 +241,7 @@ async function loadMyAlbums() {
         renderAlbumsGrid();
 
     } catch (error) {
+        if (isStale(seq)) return;
         contentArea.innerHTML = `<div class="alert alert-danger">❌ ${escapeHtml(error.message)}</div>`;
     }
 }
@@ -286,9 +296,11 @@ async function searchSpotify() {
 // PLAYLISTS
 // ============================================================
 async function loadMyPlaylists() {
+    const seq = startTabLoad();
     try {
         const response = await fetch(`${API_BASE}/playlists/me`, { headers: getHeaders() });
         const playlists = await response.json();
+        if (isStale(seq)) return; // o usuário já foi pra outra aba
 
         if (!response.ok) throw new Error(playlists.message || 'Erro ao carregar playlists');
 
@@ -336,6 +348,7 @@ async function loadMyPlaylists() {
         `;
 
     } catch (error) {
+        if (isStale(seq)) return;
         contentArea.innerHTML = `<div class="alert alert-danger">❌ ${escapeHtml(error.message)}</div>`;
     }
 }
@@ -446,6 +459,14 @@ async function loadProfileHeader() {
     const nameEl = document.getElementById('user-card-name');
     if (nameEl && me && me.username) nameEl.textContent = me.username;
 
+    // Bio (ou a frase padrão) e gêneros favoritos de verdade
+    const bioEl = document.getElementById('dash-bio');
+    if (bioEl && me) bioEl.textContent = me.bio || 'Membro da comunidade B8Box';
+    if (me) {
+        B8.renderGenreChips(document.getElementById('dash-genres'), me.favoriteGenres || [],
+            'Nenhum gênero ainda. Adicione no seu perfil.');
+    }
+
     try {
         const [albumsRes, playlistsRes] = await Promise.all([
             fetch(`${API_BASE}/albums/me`, { headers: getHeaders() }),
@@ -504,6 +525,51 @@ async function injectFollowStats(me) {
 }
 
 // ============================================================
+// FEED: avaliações e playlists públicas de quem você segue
+// ============================================================
+async function loadFeed() {
+    const seq = startTabLoad();
+    contentArea.innerHTML = `
+        <div class="text-center text-muted py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Carregando o feed...</p>
+        </div>
+    `;
+    try {
+        const me = await meReady;
+        const response = await fetch(`${API_BASE}/feed`, { headers: getHeaders() });
+        if (isStale(seq)) return; // o usuário já foi pra outra aba
+        if (!response.ok) throw new Error('Não foi possível carregar o feed.');
+        const items = await response.json();
+        if (isStale(seq)) return;
+
+        if (!items.length) {
+            contentArea.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-people" style="font-size: 3rem; color: var(--purple-2);"></i>
+                    <h4 class="mt-3">Seu feed está vazio</h4>
+                    <p class="text-muted">Siga pessoas no Explorar para ver aqui as avaliações e as playlists delas.</p>
+                    <a href="/explore.html" class="btn btn-primary"><i class="bi bi-search"></i> Encontrar pessoas</a>
+                </div>
+            `;
+            return;
+        }
+
+        contentArea.innerHTML = `
+            <div class="d-flex flex-column gap-3">
+                ${items.map(it => B8.renderFeedItem(it, me ? me.id : null)).join('')}
+            </div>
+        `;
+    } catch (error) {
+        if (isStale(seq)) return;
+        contentArea.innerHTML = `<div class="alert alert-danger">❌ ${escapeHtml(error.message)}</div>`;
+    }
+}
+
+// Botões de curtir do feed (um ouvinte só, vale para tudo que for desenhado aqui)
+B8.bindLikeButtons(contentArea, getHeaders);
+
+// ============================================================
 // Navegar pro detalhe da playlist
 // ============================================================
 function viewPlaylist(playlistId) {
@@ -527,4 +593,4 @@ document.getElementById('logout-btn').addEventListener('click', function() {
 userName.textContent = (username && !username.includes('@')) ? username : '';
 
 loadProfileHeader();
-loadMyAlbums();
+loadMyAlbums();

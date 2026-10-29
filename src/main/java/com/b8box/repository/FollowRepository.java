@@ -2,6 +2,8 @@ package com.b8box.repository;
 
 import com.b8box.model.Follow;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,4 +20,8 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     void deleteByFollowedId(Long followedId);
     List<Follow> findByFollowedId(Long followedId);   // quem segue o usuário X
     List<Follow> findByFollowerId(Long followerId);   // quem o usuário X segue
+
+    // Só os ids de quem o usuário segue (usado pelo feed, sem carregar os usuários)
+    @Query("select f.followed.id from Follow f where f.follower.id = :userId")
+    List<Long> findFollowedIds(@Param("userId") Long userId);
 }

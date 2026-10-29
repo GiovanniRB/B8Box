@@ -31,6 +31,7 @@ let currentAlbumId = getParam('id') ? Number(getParam('id')) : null;
 let currentSpotifyId = getParam('spotifyId');
 let isPreviewMode = !currentAlbumId && !!currentSpotifyId;
 let currentUserId = null;
+let currentUserReady = Promise.resolve(); // resolvida quando currentUserId estiver preenchido
 let currentUserRating = null; // preenchido em loadRatings() quando o usuário já avaliou este álbum
 let currentTrackIds = []; // ids internos das faixas, preenchido em loadTracks() — usado pelo "Adicionar à playlist"
 
@@ -40,7 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    loadCurrentUser();
+    // As avaliações esperam por isto antes de separar "a sua" das outras
+    // (antes, se a lista chegasse primeiro, a sua aparecia como da comunidade).
+    currentUserReady = loadCurrentUser();
+
+    // Curtidas nas avaliações da comunidade (um ouvinte só para a lista toda)
+    B8.bindLikeButtons(document.getElementById('reviews-list'), authHeaders);
 
     if (isPreviewMode) {
         loadPreview();
@@ -147,11 +153,18 @@ async function loadAlbum() {
 
 function renderAlbumHeader(album) {
     document.getElementById('album-title').innerText = album.title || 'Sem título';
-    document.getElementById('album-artist').innerText = album.artist || '';
+
+    // Artista + ano de lançamento (ex.: "Nirvana · 1991"). O ano vem tanto do
+    // álbum já importado quanto da pré-visualização do Spotify.
+    const parts = [album.artist, album.releaseYear].filter(v => v !== null && v !== undefined && v !== '');
+    document.getElementById('album-artist').innerText = parts.join(' · ');
 
     const coverEl = document.getElementById('album-cover');
     if (album.coverUrl) {
-        coverEl.innerHTML = `<img src="${album.coverUrl}" alt="${album.title || ''}">`;
+        const img = document.createElement('img');
+        img.src = album.coverUrl;
+        img.alt = album.title || '';
+        coverEl.replaceChildren(img);
     }
 }
 
@@ -310,6 +323,7 @@ async function loadRatings() {
         const res = await fetch(`${API_BASE}/ratings/album/${currentAlbumId}`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Falha ao carregar avaliações');
         const ratings = await res.json();
+        await currentUserReady;
 
         document.getElementById('album-ratings-count').innerText = ratings.length;
         if (ratings.length) {
@@ -330,6 +344,7 @@ async function loadRatings() {
                     <div class="text-muted mb-1">Sua avaliação</div>
                     <span class="star-rating">★ ${escapeHtml(yourRating.score)}</span>
                     <p class="mb-0 mt-1">${escapeHtml(yourRating.review)}</p>
+                    ${yourRating.likesCount > 0 ? `<div class="mt-2">${B8.likeCountHtml(yourRating.likesCount)}</div>` : ''}
                 </div>
             `;
         } else {
@@ -366,6 +381,7 @@ async function loadRatings() {
                         </div>
                     </div>
                     <p class="mb-0 text-muted">${escapeHtml(r.review)}</p>
+                    <div class="mt-2">${B8.likeButtonHtml(r.id, r.likesCount, r.likedByMe)}</div>
                 </div>
             `;
         }).join('');

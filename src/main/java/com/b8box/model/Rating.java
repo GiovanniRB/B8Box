@@ -3,6 +3,8 @@ package com.b8box.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "ratings")
@@ -37,6 +39,12 @@ public class Rating {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    // Curtidas recebidas. Apagar a avaliação apaga as curtidas dela junto
+    // (sem isso, a chave estrangeira de rating_likes impediria a exclusão).
+    @OneToMany(mappedBy = "rating", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<RatingLike> likes = new ArrayList<>();
 
     // Construtor vazio (OBRIGATÓRIO para JPA)
     public Rating() {}
