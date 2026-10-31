@@ -220,10 +220,18 @@
                 <a href="/" class="btn-pill-outline" data-b8-login>Entrar</a>`;
         }
 
+        // Em telas < 992px (navbar-expand-lg) os links ficam escondidos atrás
+        // do botão ☰ e abrem num painel (collapse do Bootstrap).
         nav.innerHTML = `
             <div class="container-fluid px-5">
                 <a class="navbar-brand" href="/"><i class="bi bi-music-note-beamed" aria-hidden="true"></i> B8Box</a>
-                <div class="d-flex align-items-center gap-3">${right}</div>
+                <button class="navbar-toggler b8-nav-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#b8-nav-links" aria-controls="b8-nav-links" aria-expanded="false" aria-label="Abrir menu">
+                    <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="b8-nav-links">
+                    <div class="b8-nav-items">${right}</div>
+                </div>
             </div>`;
 
         const logoutBtn = nav.querySelector('#logout-btn');
@@ -234,6 +242,9 @@
                 const modal = document.getElementById('loginModal');
                 if (!modal || !window.bootstrap) return; // segue o link para a home
                 e.preventDefault();
+                // no celular, fecha o menu antes de abrir o login
+                const menu = bootstrap.Collapse.getInstance(nav.querySelector('#b8-nav-links'));
+                if (menu) menu.hide();
                 bootstrap.Modal.getOrCreateInstance(modal).show();
             });
         });

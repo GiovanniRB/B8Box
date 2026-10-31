@@ -104,7 +104,7 @@ async function searchAlbums(query) {
     resultsGrid.innerHTML = data.map(album => `
         <div class="col-6 col-md-4 col-lg-3">
             <a href="album-detail.html?spotifyId=${encodeURIComponent(album.spotifyId)}" class="album-card d-block text-decoration-none text-white h-100">
-                <img src="${album.coverUrl || 'https://via.placeholder.com/300x300/16102b/a79fc2?text=B8Box'}" class="album-cover w-100" alt="${escapeHtml(album.title)}">
+                <img src="${escapeHtml(album.coverUrl || '/images/cover-placeholder.svg')}" class="album-cover w-100" alt="${escapeHtml(album.title)}">
                 <div class="p-3">
                     <h6 class="mb-0 text-truncate">${escapeHtml(album.title)}</h6>
                     <p class="text-muted mb-0 small text-truncate">${escapeHtml(album.artist)}</p>

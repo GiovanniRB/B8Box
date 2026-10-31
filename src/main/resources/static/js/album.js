@@ -68,6 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // (o botão "Sair" da navbar é tratado no ui.js)
 });
 
+// "1 avaliação" / "3 avaliações"
+function ratingsCountLabel(count) {
+    return count === 1 ? '1 avaliação' : `${count} avaliações`;
+}
+
 function paintStars(value) {
     document.querySelectorAll('#star-input span').forEach(s => {
         s.classList.toggle('filled', Number(s.dataset.value) <= Number(value));
@@ -112,7 +117,7 @@ async function loadPreview() {
         renderAlbumHeader(album);
         renderTracks(album.tracks || []);
 
-        document.getElementById('album-ratings-count').innerText = '0';
+        document.getElementById('album-ratings-count').innerText = ratingsCountLabel(0);
         document.getElementById('album-avg-rating').innerText = '—';
         document.getElementById('reviews-list').innerHTML =
             '<div class="text-center text-muted py-4">Ainda não há avaliações — seja o primeiro a avaliar este álbum!</div>';
@@ -317,7 +322,7 @@ async function loadRatings() {
         const ratings = await res.json();
         await currentUserReady;
 
-        document.getElementById('album-ratings-count').innerText = ratings.length;
+        document.getElementById('album-ratings-count').innerText = ratingsCountLabel(ratings.length);
         if (ratings.length) {
             const avg = ratings.reduce((sum, r) => sum + (r.score || 0), 0) / ratings.length;
             document.getElementById('album-avg-rating').innerText = avg.toFixed(1);

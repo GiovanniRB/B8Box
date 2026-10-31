@@ -165,7 +165,7 @@ async function loadAlbums() {
 }
 
 function renderAlbumCard(album, isOwner, index, total) {
-    const cover = album.coverUrl || 'https://via.placeholder.com/300x300/cccccc/666666?text=Sem+Capa';
+    const cover = album.coverUrl || '/images/cover-placeholder.svg';
     const spotifyLink = album.spotifyId
         ? `https://open.spotify.com/album/${encodeURIComponent(album.spotifyId)}`
         : null;

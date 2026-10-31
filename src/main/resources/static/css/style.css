@@ -67,6 +67,41 @@ h1, h2, h3, h4, h5, .display-headline {
 .nav-link-ghost.active { color: var(--text-white) !important; }
 .nav-link-ghost:hover { color: var(--text-white) !important; }
 
+/* Links da navbar (desenhada pelo ui.js) */
+.b8-nav-items { display: flex; align-items: center; gap: 1rem; }
+.b8-nav-toggler {
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    color: var(--text-white);
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0.35rem 0.6rem;
+}
+.b8-nav-toggler:focus { box-shadow: 0 0 0 2px var(--purple-glow); }
+
+/* Celular/tablet: os links viram um painel embaixo da marca */
+@media (max-width: 991.98px) {
+    .navbar { padding: 1rem 0; }
+    .b8-nav-items {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.25rem;
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-card);
+    }
+    .b8-nav-items .nav-link-ghost,
+    .b8-nav-items .navbar-text {
+        margin-right: 0;
+        padding: 0.6rem 0.75rem;
+        border-radius: 10px;
+    }
+    .b8-nav-items .nav-link-ghost.active { background: var(--bg-card-soft); }
+    .b8-nav-items .btn-pill-outline { align-self: flex-start; margin: 0.25rem 0.75rem; }
+}
+
 /* Bootstrap overrides */
 .bg-primary { background-color: var(--purple-1) !important; }
 .text-primary { color: var(--purple-2) !important; }
@@ -506,4 +541,19 @@ h1, h2, h3, h4, h5, .display-headline {
 
 @media (max-width: 576px) {
     .hero-compact .hero-text h1 { font-size: 1.8rem; }
+}
+
+/* ===== Celular: margem lateral menor =====
+   As páginas usam container-fluid px-5 (48px de cada lado), que num celular
+   de 375px come um quarto da tela. */
+@media (max-width: 575.98px) {
+    .container-fluid.px-5 { padding-left: 1rem !important; padding-right: 1rem !important; }
+
+    /* abas numa linha só, rolando para o lado se não couberem */
+    .nav-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .nav-tabs .nav-link { padding: 0.5rem 1rem; white-space: nowrap; }
+
+    /* capas quadradas nas grades de 2 colunas (em vez de 200px fixos) */
+    .album-cover, .album-cover-placeholder { height: auto; aspect-ratio: 1 / 1; }
 }

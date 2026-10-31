@@ -88,7 +88,7 @@ let myAlbums = [];
 let sortMode = 'recent';
 let filterText = '';
 
-// Cada aba (Álbuns, Playlists, Feed) busca dados na API. Se o usuário trocar
+// Cada aba (Álbuns, Playlists) busca dados na API. Se o usuário trocar
 // de aba antes da resposta chegar, a resposta atrasada NÃO pode desenhar por
 // cima da aba nova. Cada carregamento recebe um número; só o mais recente desenha.
 let tabLoadSeq = 0;
@@ -118,9 +118,9 @@ function renderAlbumCard(album) {
     const badge = shown != null ? Number(shown).toFixed(1) : '—';
 
     return `
-        <div class="col-md-4 col-lg-3 mb-4">
+        <div class="col-6 col-md-4 col-lg-3 mb-4">
             <a href="album-detail.html?id=${album.id}" class="card album-card h-100 text-decoration-none text-white d-block">
-                <img src="${escapeHtml(album.coverUrl || 'https://via.placeholder.com/300x300/16102b/a79fc2?text=B8Box')}"
+                <img src="${escapeHtml(album.coverUrl || '/images/cover-placeholder.svg')}"
                      class="card-img-top album-cover" alt="${escapeHtml(album.title)}">
                 <div class="card-body">
                     <h6 class="card-title text-truncate">${escapeHtml(album.title)}</h6>
@@ -276,7 +276,7 @@ async function searchSpotify() {
 
         searchResults.innerHTML = data.map(album => `
             <a href="album-detail.html?spotifyId=${encodeURIComponent(album.spotifyId)}" class="list-group-item list-group-item-action search-result-item d-flex align-items-center text-decoration-none text-white">
-                <img src="${escapeHtml(album.coverUrl || 'https://via.placeholder.com/50')}"
+                <img src="${escapeHtml(album.coverUrl || '/images/cover-placeholder.svg')}"
                      style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 15px;">
                 <div class="flex-grow-1">
                     <strong>${escapeHtml(album.title)}</strong>
@@ -480,8 +480,12 @@ async function loadProfileHeader() {
         setText('stat-playlists', playlists.length);
         setText('stat-playlists-side', playlists.length);
 
-        const totalRatings = albums.reduce((sum, a) => sum + (a.ratings ? a.ratings.length : 0), 0);
-        setText('stat-ratings-side', totalRatings);
+        // a.ratings traz as avaliações de TODO MUNDO naquele álbum; aqui
+        // contamos só as minhas
+        const myUserId = me && me.id != null ? me.id : null;
+        const totalRatings = albums.reduce((sum, a) =>
+            sum + (a.ratings ? a.ratings.filter(r => r.userId === myUserId).length : 0), 0);
+        setText('stat-ratings-side', myUserId != null ? totalRatings : '—');
     } catch (err) {
         console.error('Erro ao carregar estatísticas:', err);
     }
@@ -524,50 +528,7 @@ async function injectFollowStats(me) {
     }
 }
 
-// ============================================================
-// FEED: avaliações e playlists públicas de quem você segue
-// ============================================================
-async function loadFeed() {
-    const seq = startTabLoad();
-    contentArea.innerHTML = `
-        <div class="text-center text-muted py-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2">Carregando o feed...</p>
-        </div>
-    `;
-    try {
-        const me = await meReady;
-        const response = await fetch(`${API_BASE}/feed`, { headers: getHeaders() });
-        if (isStale(seq)) return; // o usuário já foi pra outra aba
-        if (!response.ok) throw new Error('Não foi possível carregar o feed.');
-        const items = await response.json();
-        if (isStale(seq)) return;
-
-        if (!items.length) {
-            contentArea.innerHTML = `
-                <div class="text-center py-5">
-                    <i class="bi bi-people" style="font-size: 3rem; color: var(--purple-2);"></i>
-                    <h4 class="mt-3">Seu feed está vazio</h4>
-                    <p class="text-muted">Siga pessoas no Explorar para ver aqui as avaliações e as playlists delas.</p>
-                    <a href="/explore.html" class="btn btn-primary"><i class="bi bi-search"></i> Encontrar pessoas</a>
-                </div>
-            `;
-            return;
-        }
-
-        contentArea.innerHTML = `
-            <div class="d-flex flex-column gap-3">
-                ${items.map(it => B8.renderFeedItem(it, me ? me.id : null)).join('')}
-            </div>
-        `;
-    } catch (error) {
-        if (isStale(seq)) return;
-        contentArea.innerHTML = `<div class="alert alert-danger">❌ ${escapeHtml(error.message)}</div>`;
-    }
-}
-
-// Botões de curtir do feed (um ouvinte só, vale para tudo que for desenhado aqui)
-B8.bindLikeButtons(contentArea, getHeaders);
+// (o feed de quem você segue fica na home, aba "Seguindo" — home.js)
 
 // ============================================================
 // Navegar pro detalhe da playlist
