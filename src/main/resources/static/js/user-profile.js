@@ -28,6 +28,9 @@ function escapeHtml(value) {
 
 const profileUserId = getParam('id');
 let myId = null;
+// Promessa do loadMe(): as outras cargas começam junto com ela e só a
+// esperam na hora de desenhar (quando precisam saber o meu id).
+let meReady = Promise.resolve();
 let isOwnProfile = false;
 let isFollowing = false;
 
@@ -43,11 +46,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     makeStatClickable('stat-followers', 'followers');
     makeStatClickable('stat-following', 'following');
 
-    await loadMe(); // precisa do meu id pra saber se este perfil é o meu
-    await loadProfile();
+    // Tudo em paralelo: antes cada pedido esperava o anterior terminar.
+    meReady = loadMe();
+    const profileDone = loadProfile();
     loadRatings();
     loadPlaylists();
     B8.bindLikeButtons(document.getElementById('ratings-list'), authHeaders);
+    await profileDone;
 
     // vindo do dashboard (?list=followers|following): já abre a lista
     const list = getParam('list');
@@ -80,6 +85,7 @@ async function loadProfile() {
         const res = await fetch(`${API_BASE}/users/${profileUserId}/public`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Falha ao carregar perfil');
         const profile = await res.json();
+        await meReady; // precisa do meu id pra saber se este perfil é o meu
 
         isOwnProfile = myId != null && String(myId) === String(profileUserId);
 
@@ -303,6 +309,7 @@ async function loadRatings() {
         const res = await fetch(`${API_BASE}/users/${profileUserId}/ratings`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Falha ao carregar as avaliações');
         const items = await res.json();
+        await meReady; // meu id: não oferecer "curtir" nas minhas avaliações
 
         if (!items.length) {
             list.innerHTML = '<div class="text-center text-muted py-4">Nenhuma avaliação ainda.</div>';

@@ -121,10 +121,12 @@ public class FollowController {
     }
 
     private Map<String, Object> buildStatus(Long targetUserId, Long meId) {
+        // os três números numa consulta só (ver UserRepository.profileStats)
+        UserRepository.ProfileStats stats = userRepository.profileStats(targetUserId, meId);
         Map<String, Object> result = new HashMap<>();
-        result.put("followersCount", followRepository.countByFollowedId(targetUserId));
-        result.put("followingCount", followRepository.countByFollowerId(targetUserId));
-        result.put("isFollowing", followRepository.existsByFollowerIdAndFollowedId(meId, targetUserId));
+        result.put("followersCount", stats.getFollowersCount());
+        result.put("followingCount", stats.getFollowingCount());
+        result.put("isFollowing", stats.getFollowingByMe() > 0);
         return result;
     }
 

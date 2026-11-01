@@ -31,7 +31,10 @@ public class Music {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // Fora do JSON: a lista de faixas não precisa das avaliações, e serializar
+    // isso fazia uma consulta extra ao banco para CADA faixa do álbum.
     @OneToMany(mappedBy = "music", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Rating> ratings = new ArrayList<>();
 
     // Construtor vazio (OBRIGATÓRIO para JPA)

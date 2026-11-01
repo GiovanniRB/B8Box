@@ -189,7 +189,7 @@ function renderTracks(tracks) {
     container.innerHTML = tracks.map((m, i) => `
         <div class="track-row">
             <span class="track-num">${i + 1}</span>
-            <span class="track-name">${m.title}</span>
+            <span class="track-name">${escapeHtml(m.title)}</span>
             <span class="track-duration">${formatDuration(m.duration)}</span>
         </div>
     `).join('');

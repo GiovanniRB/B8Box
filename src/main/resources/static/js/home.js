@@ -16,6 +16,9 @@
     const tabsEl = document.getElementById('review-tabs');
 
     let myId = null; // para não oferecer "curtir" na própria avaliação
+    // As críticas são pedidas junto com /users/me e só esperam por ele na
+    // hora de desenhar (antes uma esperava a outra terminar).
+    let meReady = Promise.resolve();
 
     function headers() {
         return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : {};
@@ -152,6 +155,7 @@
             }
             if (!res.ok) throw new Error('Falha ao carregar críticas');
             const items = await res.json();
+            await meReady;
             if (seq !== loadSeq) return;
 
             reviewsEl.innerHTML = items.length
@@ -185,10 +189,10 @@
 
         B8.bindLikeButtons(reviewsEl, headers);
         loadPopularAlbums();
-        loadMe().then(me => {
+        meReady = loadMe().then(me => {
             myId = me && me.id != null ? me.id : null;
-            showTab('following');
         });
+        showTab('following');
     } else {
         document.getElementById('hero-register-btn').addEventListener('click', () => openLogin(true));
         document.getElementById('hero-login-btn').addEventListener('click', () => openLogin(false));

@@ -237,15 +237,13 @@ public class UserController {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
         User me = getAuthenticatedUser();
 
-        long albumsCount = ratingRepository.findByUserId(id).stream()
-                .map(r -> r.getAlbum() != null ? r.getAlbum().getId() : null)
-                .filter(Objects::nonNull)
-                .distinct()
-                .count();
-        long publicPlaylistsCount = playlistRepository.findByUserIdAndIsPublicTrue(id).size();
-        long followersCount = followRepository.countByFollowedId(id);
-        long followingCount = followRepository.countByFollowerId(id);
-        boolean followingByMe = followRepository.existsByFollowerIdAndFollowedId(me.getId(), id);
+        // os cinco contadores numa consulta só (ver UserRepository.profileStats)
+        UserRepository.ProfileStats stats = userRepository.profileStats(id, me.getId());
+        long albumsCount = stats.getAlbumsCount();
+        long publicPlaylistsCount = stats.getPublicPlaylistsCount();
+        long followersCount = stats.getFollowersCount();
+        long followingCount = stats.getFollowingCount();
+        boolean followingByMe = stats.getFollowingByMe() > 0;
 
         UserPublicProfileDTO dto = new UserPublicProfileDTO();
         dto.setId(target.getId());
