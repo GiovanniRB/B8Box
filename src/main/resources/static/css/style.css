@@ -386,6 +386,11 @@ h1, h2, h3, h4, h5, .display-headline {
 
 .star-input { font-size: 1.6rem; color: var(--text-muted); cursor: pointer; letter-spacing: 3px; }
 .star-input .filled { color: var(--gold); }
+/* meia estrela: metade esquerda dourada, metade direita apagada */
+.star-input .half {
+    background: linear-gradient(90deg, var(--gold) 50%, var(--text-muted) 50%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
 
 @media (max-width: 991px) {
     .hero { flex-direction: column; text-align: center; padding-top: 50px; }

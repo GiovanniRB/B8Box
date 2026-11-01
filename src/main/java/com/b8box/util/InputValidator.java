@@ -59,8 +59,10 @@ public final class InputValidator {
     }
 
     public static String validateRating(Double score, String review) {
-        if (score == null || score.isNaN() || score.isInfinite() || score < 0 || score > 10) {
-            return "❌ A nota deve estar entre 0 e 10.";
+        // 0 a 5 estrelas, em passos de meia estrela (0, 0.5, 1 ... 5)
+        if (score == null || score.isNaN() || score.isInfinite() || score < 0 || score > 5
+                || score * 2 != Math.rint(score * 2)) {
+            return "❌ A nota deve ir de 0 a 5 estrelas, em passos de meia estrela.";
         }
         if (review != null && review.length() > MAX_REVIEW_LENGTH) {
             return "❌ A resenha pode ter no máximo " + MAX_REVIEW_LENGTH + " caracteres.";

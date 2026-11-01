@@ -147,7 +147,7 @@ function sortAlbums(list) {
         case 'score-desc':
             return arr.sort((a, b) => (score(b) ?? -1) - (score(a) ?? -1));
         case 'score-asc':
-            return arr.sort((a, b) => (score(a) ?? 11) - (score(b) ?? 11));
+            return arr.sort((a, b) => (score(a) ?? 6) - (score(b) ?? 6));
         case 'title':
             return arr.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
         case 'artist':

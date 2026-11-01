@@ -60,10 +60,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('delete-rating-btn').addEventListener('click', deleteRating);
 
     document.querySelectorAll('#star-input span').forEach(star => {
-        star.addEventListener('click', () => {
-            document.getElementById('rating-score').value = star.dataset.value;
-            paintStars(star.dataset.value);
+        // clique na metade esquerda da estrela = meia estrela
+        star.addEventListener('click', (e) => {
+            const rect = star.getBoundingClientRect();
+            const half = (e.clientX - rect.left) < rect.width / 2;
+            const value = Number(star.dataset.value) - (half ? 0.5 : 0);
+            document.getElementById('rating-score').value = value;
+            paintStars(value);
         });
+    });
+    document.getElementById('rating-score').addEventListener('input', (e) => {
+        paintStars(e.target.value || 0);
     });
     // (o botão "Sair" da navbar é tratado no ui.js)
 });
@@ -74,8 +81,11 @@ function ratingsCountLabel(count) {
 }
 
 function paintStars(value) {
+    const v = Number(value) || 0;
     document.querySelectorAll('#star-input span').forEach(s => {
-        s.classList.toggle('filled', Number(s.dataset.value) <= Number(value));
+        const n = Number(s.dataset.value);
+        s.classList.toggle('filled', n <= v);
+        s.classList.toggle('half', n - 0.5 === v);
     });
 }
 
@@ -456,8 +466,9 @@ async function saveRating() {
     const score = document.getElementById('rating-score').value;
     const review = document.getElementById('rating-review').value;
 
-    if (!score) {
-        alert('Informe uma nota de 0 a 10.');
+    const n = Number(score);
+    if (score === '' || !(n >= 0 && n <= 5) || n * 2 !== Math.round(n * 2)) {
+        alert('Informe uma nota de 0 a 5 estrelas (pode usar meia estrela, ex.: 3.5).');
         return;
     }
 
