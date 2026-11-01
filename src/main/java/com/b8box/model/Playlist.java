@@ -39,6 +39,14 @@ public class Playlist {
     @JsonIgnore
     private List<PlaylistItem> items = new ArrayList<>();
 
+    // Não ficam no banco: preenchidos pelo PlaylistController nas listagens,
+    // para os cards mostrarem a capa em mosaico e a quantidade de álbuns.
+    @Transient
+    private List<String> previewCovers = new ArrayList<>();
+
+    @Transient
+    private Integer albumsCount = 0;
+
     // Construtor vazio (OBRIGATÓRIO para JPA)
     public Playlist() {}
 
@@ -117,5 +125,21 @@ public class Playlist {
 
     public void setItems(List<PlaylistItem> items) {
         this.items = items;
+    }
+
+    public List<String> getPreviewCovers() {
+        return previewCovers;
+    }
+
+    public void setPreviewCovers(List<String> previewCovers) {
+        this.previewCovers = previewCovers;
+    }
+
+    public Integer getAlbumsCount() {
+        return albumsCount;
+    }
+
+    public void setAlbumsCount(Integer albumsCount) {
+        this.albumsCount = albumsCount;
     }
 }

@@ -320,31 +320,16 @@ async function loadMyPlaylists() {
         }
 
         contentArea.innerHTML = `
-            <div class="row">
-                ${playlists.map(p => `
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">${escapeHtml(p.title)}</h5>
-                                <p class="card-text small text-muted">${escapeHtml(p.description || '')}</p>
-                                <span class="badge ${p.isPublic ? 'bg-success' : 'bg-secondary'}">
-                                    ${p.isPublic ? 'Pública' : 'Privada'}
-                                </span>
-                                <button class="btn btn-sm btn-outline-primary mt-2" onclick="viewPlaylist(${p.id})">
-                                    <i class="bi bi-eye"></i> Ver
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 d-flex align-items-center justify-content-center" style="cursor: pointer; border: 2px dashed var(--border-soft);" onclick="showCreatePlaylist()">
-                        <div class="text-center py-4">
-                            <i class="bi bi-plus-circle" style="font-size: 3rem; color: var(--purple-2);"></i>
-                            <p>Criar nova playlist</p>
-                        </div>
-                    </div>
+            <div class="row g-3">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <button type="button" class="card pl-new-card h-100 w-100" onclick="showCreatePlaylist()">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span>Nova playlist</span>
+                    </button>
                 </div>
+                ${playlists.map(p => `
+                    <div class="col-6 col-md-4 col-lg-3">${B8.playlistCardHtml(p, true)}</div>
+                `).join('')}
             </div>
         `;
 

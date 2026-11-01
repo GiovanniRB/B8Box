@@ -252,6 +252,58 @@ h1, h2, h3, h4, h5, .display-headline {
     cursor: pointer;
     overflow: hidden;
 }
+/* Capa de playlist (B8.playlistCoverHtml): mosaico 2x2, capa única ou degradê */
+.pl-cover {
+    width: 100%; aspect-ratio: 1 / 1; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--purple-1), #2a1a52);
+}
+.pl-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pl-cover-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.pl-cover-empty i { font-size: 3rem; color: rgba(255, 255, 255, 0.85); }
+.pl-cover-sm { width: 56px; border-radius: 10px; flex-shrink: 0; }
+.pl-cover-sm.pl-cover-empty i { font-size: 1.4rem; }
+.album-hero-cover .pl-cover { height: 100%; border-radius: var(--radius-card); }
+.album-hero-cover .pl-cover img { border-radius: 0; }
+.album-hero-cover .pl-cover-empty i { font-size: 4rem; }
+
+/* Card de playlist (Minhas playlists, perfil público) */
+.pl-card .pl-meta { font-size: 0.8rem; color: var(--text-muted); }
+.pl-card .pl-desc {
+    font-size: 0.85rem; color: var(--text-muted);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Card "Nova playlist" (primeiro da grade em Minhas playlists) */
+.pl-new-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
+    min-height: 180px; border: 2px dashed var(--border-soft) !important; background: transparent !important;
+    color: var(--purple-2) !important; font-weight: 600; transition: 0.2s;
+}
+.pl-new-card i { font-size: 2.4rem; }
+.pl-new-card:hover { border-color: var(--purple-2) !important; background: rgba(255, 255, 255, 0.03) !important; }
+
+/* Card de álbum dentro da playlist: o link é a capa, não o card inteiro */
+.playlist-album-card { cursor: default; display: flex; flex-direction: column; }
+
+/* Botão redondo só com ícone (ações dos cards) */
+.icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; padding: 0;
+    border-radius: 50%; border: 1px solid var(--border-soft);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-white); font-size: 1rem; line-height: 1;
+    text-decoration: none; transition: 0.2s;
+}
+.icon-btn:hover:not(:disabled) { border-color: var(--purple-2); color: var(--purple-2); background: rgba(255, 255, 255, 0.08); }
+.icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.icon-btn-spotify { color: #1db954; }
+.icon-btn-spotify:hover:not(:disabled) { border-color: #1db954; color: #1db954; }
+.icon-btn-danger:hover:not(:disabled) { border-color: #dc3545; color: #ff6b78; }
+@media (max-width: 575px) {
+    .icon-btn { width: 30px; height: 30px; font-size: 0.9rem; }
+}
+
 .album-card:hover {
     transform: translateY(-6px);
     box-shadow: 0 16px 30px var(--purple-glow);

@@ -139,6 +139,50 @@
     }
 
     // ------------------------------------------------------------
+    // CAPA DE PLAYLIST
+    // covers = capas dos primeiros álbuns (previewCovers da API)
+    //   4 ou mais -> mosaico 2x2; 1 a 3 -> a primeira capa; nenhuma -> degradê
+    // extraClass = classe de tamanho/forma (ex.: pl-cover-sm)
+    // ------------------------------------------------------------
+    function playlistCoverHtml(covers, extraClass) {
+        const list = (covers || []).filter(Boolean);
+        const cls = `pl-cover ${extraClass || ''}`;
+        const img = url => `<img src="${escapeHtml(url)}" alt="" loading="lazy">`;
+        if (list.length >= 4) {
+            return `<div class="${cls} pl-cover-grid" aria-hidden="true">${list.slice(0, 4).map(img).join('')}</div>`;
+        }
+        if (list.length) {
+            return `<div class="${cls}" aria-hidden="true">${img(list[0])}</div>`;
+        }
+        return `<div class="${cls} pl-cover-empty" aria-hidden="true"><i class="bi bi-music-note-list"></i></div>`;
+    }
+
+    // "1 álbum" / "3 álbuns"
+    function albumsCountLabel(count) {
+        const n = Number(count) || 0;
+        return n === 1 ? '1 álbum' : `${n} álbuns`;
+    }
+
+    // Card de playlist (capa + título + "N álbuns"). showVisibility = mostra
+    // se é pública ou privada (só faz sentido nas playlists da própria pessoa).
+    function playlistCardHtml(p, showVisibility) {
+        const visibility = showVisibility
+            ? (p.isPublic
+                ? ' · <i class="bi bi-globe2" aria-hidden="true"></i> Pública'
+                : ' · <i class="bi bi-lock-fill" aria-hidden="true"></i> Privada')
+            : '';
+        return `
+            <a href="/playlist-detail.html?id=${Number(p.id)}" class="card album-card pl-card h-100 text-decoration-none text-white d-block">
+                ${playlistCoverHtml(p.previewCovers)}
+                <div class="p-2 p-md-3">
+                    <h3 class="h6 card-title text-truncate mb-1" title="${escapeHtml(p.title)}">${escapeHtml(p.title)}</h3>
+                    <div class="pl-meta">${albumsCountLabel(p.albumsCount)}${visibility}</div>
+                    ${p.description ? `<p class="pl-desc mb-0 mt-1">${escapeHtml(p.description)}</p>` : ''}
+                </div>
+            </a>`;
+    }
+
+    // ------------------------------------------------------------
     // ITEM DO FEED / DA LISTA DE AVALIAÇÕES DE UM PERFIL
     // it = FeedItemDTO; myId = id de quem está vendo (para não oferecer
     // "curtir" na própria avaliação).
@@ -299,6 +343,9 @@
         bindLikeButtons,
         renderFeedItem,
         avatarHtml,
+        playlistCoverHtml,
+        playlistCardHtml,
+        albumsCountLabel,
         isLoggedIn,
         logout,
         updateNavUser,

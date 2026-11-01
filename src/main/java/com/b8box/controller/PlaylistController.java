@@ -47,7 +47,7 @@ public class PlaylistController {
     @GetMapping("/me")
     public List<Playlist> getMyPlaylists() {
         User user = getAuthenticatedUser();
-        return playlistRepository.findByUserId(user.getId());
+        return withPreviews(playlistRepository.findByUserId(user.getId()));
     }
 
     // ============================================================
@@ -55,7 +55,7 @@ public class PlaylistController {
     // ============================================================
     @GetMapping("/public")
     public List<Playlist> getPublicPlaylists() {
-        return playlistRepository.findByIsPublicTrue();
+        return withPreviews(playlistRepository.findByIsPublicTrue());
     }
 
     // ============================================================
@@ -66,9 +66,9 @@ public class PlaylistController {
     @GetMapping("/public/search")
     public List<Playlist> searchPublicPlaylists(@RequestParam String q) {
         String query = q.toLowerCase();
-        return playlistRepository.findByIsPublicTrue().stream()
+        return withPreviews(playlistRepository.findByIsPublicTrue().stream()
                 .filter(p -> p.getTitle() != null && p.getTitle().toLowerCase().contains(query))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     // ============================================================
@@ -77,7 +77,24 @@ public class PlaylistController {
     // ============================================================
     @GetMapping("/user/{userId}")
     public List<Playlist> getUserPublicPlaylists(@PathVariable Long userId) {
-        return playlistRepository.findByUserIdAndIsPublicTrue(userId);
+        return withPreviews(playlistRepository.findByUserIdAndIsPublicTrue(userId));
+    }
+
+    // Preenche, numa consulta só, as capas dos primeiros álbuns (até 4,
+    // para o mosaico) e a quantidade de álbuns de cada playlist da lista.
+    private List<Playlist> withPreviews(List<Playlist> playlists) {
+        if (playlists.isEmpty()) return playlists;
+        Map<Long, Playlist> byId = new HashMap<>();
+        playlists.forEach(p -> byId.put(p.getId(), p));
+
+        for (PlaylistItemRepository.AlbumPreviewRow row : playlistItemRepository.albumPreviews(byId.keySet())) {
+            Playlist p = byId.get(row.getPlaylistId());
+            p.setAlbumsCount(p.getAlbumsCount() + 1);
+            if (row.getCoverUrl() != null && p.getPreviewCovers().size() < 4) {
+                p.getPreviewCovers().add(row.getCoverUrl());
+            }
+        }
+        return playlists;
     }
 
     // ============================================================

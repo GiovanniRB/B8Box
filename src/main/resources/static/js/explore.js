@@ -161,10 +161,10 @@ async function searchPlaylists(query) {
             <div class="d-flex flex-column gap-2">
                 ${data.map(p => `
                     <a href="playlist-detail.html?id=${p.id}" class="card p-3 d-flex flex-row align-items-center gap-3 text-decoration-none text-white">
-                        <div style="width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--purple-1), #2a1a52);"><i class="bi bi-list-ul"></i></div>
-                        <div>
-                            <div class="fw-semibold">${escapeHtml(p.title)}</div>
-                            <div class="text-muted small">${escapeHtml(p.description || '')}</div>
+                        ${B8.playlistCoverHtml(p.previewCovers, 'pl-cover-sm')}
+                        <div class="text-truncate">
+                            <div class="fw-semibold text-truncate">${escapeHtml(p.title)}</div>
+                            <div class="text-muted small text-truncate">${escapeHtml(B8.albumsCountLabel(p.albumsCount))}${p.description ? ' · ' + escapeHtml(p.description) : ''}</div>
                         </div>
                         <i class="bi bi-chevron-right ms-auto"></i>
                     </a>

@@ -338,15 +338,7 @@ async function loadPlaylists() {
         }
 
         grid.innerHTML = playlists.map(p => `
-            <div class="col-md-4">
-                <a href="playlist-detail.html?id=${p.id}" class="card p-3 d-block text-decoration-none text-white h-100">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <i class="bi bi-list-ul" style="color: var(--purple-2); font-size: 1.3rem;"></i>
-                        <h6 class="mb-0">${escapeHtml(p.title)}</h6>
-                    </div>
-                    <p class="text-muted small mb-0">${escapeHtml(p.description || '')}</p>
-                </a>
-            </div>
+            <div class="col-6 col-md-4 col-lg-3">${B8.playlistCardHtml(p, false)}</div>
         `).join('');
     } catch (err) {
         console.error(err);

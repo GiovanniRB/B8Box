@@ -141,6 +141,9 @@ async function loadAlbums() {
         if (!res.ok) throw new Error('Falha ao carregar álbuns');
         const albums = await res.json();
         currentAlbums = albums;
+        // capa do topo acompanha a ordem atual (mosaico dos 4 primeiros)
+        document.getElementById('playlist-cover').innerHTML =
+            B8.playlistCoverHtml(albums.map(a => a.coverUrl));
 
         if (!albums.length) {
             container.innerHTML = `
@@ -171,47 +174,48 @@ function renderAlbumCard(album, isOwner, index, total) {
         : null;
 
     // Setas pra mudar a posição do álbum na playlist (só o dono vê)
-    const reorderRow = isOwner && total > 1 ? `
-        <div class="d-flex justify-content-between mb-2">
-            <button class="btn btn-sm btn-outline-secondary" onclick="moveAlbum(${index}, -1)"
-                    title="Mover pra antes" ${index === 0 ? 'disabled' : ''}>
+    const reorder = isOwner && total > 1 ? `
+        <div class="d-flex align-items-center gap-1">
+            <button class="icon-btn" onclick="moveAlbum(${index}, -1)"
+                    title="Mover pra antes" aria-label="Mover pra antes" ${index === 0 ? 'disabled' : ''}>
                 <i class="bi bi-chevron-left"></i>
             </button>
-            <span class="text-muted small align-self-center">${index + 1}/${total}</span>
-            <button class="btn btn-sm btn-outline-secondary" onclick="moveAlbum(${index}, 1)"
-                    title="Mover pra depois" ${index === total - 1 ? 'disabled' : ''}>
+            <span class="text-muted small">${index + 1}/${total}</span>
+            <button class="icon-btn" onclick="moveAlbum(${index}, 1)"
+                    title="Mover pra depois" aria-label="Mover pra depois" ${index === total - 1 ? 'disabled' : ''}>
                 <i class="bi bi-chevron-right"></i>
             </button>
         </div>
     ` : '';
 
+    const spotifyBtn = spotifyLink ? `
+        <a href="${spotifyLink}" target="_blank" rel="noopener" class="icon-btn icon-btn-spotify"
+           title="Ouvir no Spotify" aria-label="Ouvir no Spotify">
+            <i class="bi bi-spotify"></i>
+        </a>` : '';
+
+    const removeBtn = isOwner ? `
+        <button class="icon-btn icon-btn-danger" onclick="removeAlbum(${album.id})"
+                title="Remover da playlist" aria-label="Remover da playlist">
+            <i class="bi bi-trash"></i>
+        </button>` : '';
+
+    // Capa e título levam ao álbum; os botões ficam numa linha embaixo.
     return `
         <div class="col-6 col-md-4 col-lg-3">
-            <div class="card h-100 shadow-sm">
-                <img src="${escapeHtml(cover)}" class="card-img-top" alt="${escapeHtml(album.title)}"
-                     style="height: 180px; object-fit: cover;">
-                <div class="card-body d-flex flex-column p-2">
-                    <h6 class="card-title text-truncate mb-1" title="${escapeHtml(album.title)}">${escapeHtml(album.title)}</h6>
-                    <p class="card-text text-muted small mb-2 text-truncate">${escapeHtml(album.artist)}</p>
-
-                    ${reorderRow}
-
-                    <div class="mt-auto d-flex gap-1">
-                        <a href="/album-detail.html?id=${album.id}" class="btn btn-sm btn-outline-primary flex-fill" title="Abrir álbum">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        ${spotifyLink
-                            ? `<a href="${spotifyLink}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success" title="Abrir no Spotify">
-                                   <i class="bi bi-spotify"></i>
-                               </a>`
-                            : ''}
-                        ${isOwner
-                            ? `<button class="btn btn-sm btn-outline-danger"
-                                       onclick="removeAlbum(${album.id})"
-                                       title="Remover da playlist">
-                                   <i class="bi bi-trash"></i>
-                               </button>`
-                            : ''}
+            <div class="card album-card playlist-album-card h-100">
+                <a href="/album-detail.html?id=${album.id}" class="text-decoration-none text-white">
+                    <img src="${escapeHtml(cover)}" class="card-img-top album-cover" alt="Capa de ${escapeHtml(album.title)}">
+                    <div class="px-2 pt-2">
+                        <h6 class="card-title text-truncate mb-1" title="${escapeHtml(album.title)}">${escapeHtml(album.title)}</h6>
+                        <p class="card-text text-muted small mb-0 text-truncate">${escapeHtml(album.artist)}</p>
+                    </div>
+                </a>
+                <div class="mt-auto d-flex flex-wrap align-items-center gap-1 p-2">
+                    ${reorder}
+                    <div class="ms-auto d-flex gap-1">
+                        ${spotifyBtn}
+                        ${removeBtn}
                     </div>
                 </div>
             </div>
