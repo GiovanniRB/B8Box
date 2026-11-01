@@ -1,0 +1,9 @@
+# Arquivos que nunca entram na imagem Docker
+src/main/resources/application-local.properties
+scripts/*.local.json
+target/
+.git/
+.settings/
+.classpath
+.project
+.factorypath
