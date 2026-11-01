@@ -32,3 +32,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Dados de demonstração (senhas geradas pelo scripts/seed_demo.py) ###
+scripts/*.local.json
