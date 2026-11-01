@@ -166,6 +166,17 @@ function renderAlbumHeader(album) {
     const parts = [album.artist, album.releaseYear].filter(v => v !== null && v !== undefined && v !== '');
     document.getElementById('album-artist').innerText = parts.join(' · ');
 
+    // Álbum importado traz spotifyId; na pré-visualização ele vem da URL.
+    // Álbum cadastrado sem Spotify fica sem o botão.
+    const spotifyId = album.spotifyId || currentSpotifyId;
+    const spotifyBtn = document.getElementById('btn-open-spotify');
+    if (spotifyId) {
+        spotifyBtn.href = `https://open.spotify.com/album/${encodeURIComponent(spotifyId)}`;
+        spotifyBtn.classList.remove('d-none');
+    } else {
+        spotifyBtn.classList.add('d-none');
+    }
+
     const coverEl = document.getElementById('album-cover');
     if (album.coverUrl) {
         const img = document.createElement('img');

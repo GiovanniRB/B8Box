@@ -8,6 +8,7 @@ public class AlbumResponseDTO {
     private String artist;
     private String coverUrl;
     private Integer releaseYear;
+    private String spotifyId; // para o botão "Ouvir no Spotify"
     private Double averageRating;
     private List<RatingResponseDTO> ratings;
     
@@ -64,6 +65,14 @@ public class AlbumResponseDTO {
 
 	public void setReleaseYear(Integer releaseYear) {
 		this.releaseYear = releaseYear;
+	}
+
+	public String getSpotifyId() {
+		return spotifyId;
+	}
+
+	public void setSpotifyId(String spotifyId) {
+		this.spotifyId = spotifyId;
 	}
 
 	public Double getAverageRating() {

@@ -151,6 +151,7 @@ public class AlbumController {
         dto.setArtist(album.getArtist());
         dto.setCoverUrl(album.getCoverUrl());
         dto.setReleaseYear(album.getReleaseYear());
+        dto.setSpotifyId(album.getSpotifyId());
 
         if (!album.getRatings().isEmpty()) {
             double avg = album.getRatings().stream()
