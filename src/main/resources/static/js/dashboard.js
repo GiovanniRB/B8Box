@@ -35,9 +35,7 @@ async function fetchMe() {
         const res = await fetch(`${API_BASE}/users/me`, { headers: getHeaders() });
         if (res.status === 401 || res.status === 403) {
             // token expirado/inválido
-            localStorage.removeItem('b8box_token');
-            localStorage.removeItem('b8box_username');
-            window.location.href = '/';
+            B8.logout();
             return null;
         }
         if (!res.ok) return null;
@@ -46,6 +44,9 @@ async function fetchMe() {
             localStorage.setItem('b8box_username', me.username);
             if (userName) userName.textContent = me.username;
         }
+        B8.updateNavUser(me);
+        const avatarBox = document.getElementById('dashboard-avatar');
+        if (avatarBox) avatarBox.innerHTML = B8.avatarHtml(me.avatarUrl, me.username, 'b8-avatar-fill');
         return me;
     } catch (err) {
         console.error('Erro ao carregar usuário:', err);

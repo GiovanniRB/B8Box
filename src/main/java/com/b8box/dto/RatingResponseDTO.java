@@ -9,6 +9,10 @@ public class RatingResponseDTO {
     private String createdAt;
     private long likesCount;
     private boolean likedByMe;
+    private String avatarUrl;
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 
     public RatingResponseDTO() {}
 

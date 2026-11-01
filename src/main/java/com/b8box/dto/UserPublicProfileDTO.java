@@ -14,6 +14,7 @@ public class UserPublicProfileDTO {
     private long followersCount;
     private long followingCount;
     private boolean followingByMe;
+    private String avatarUrl;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -44,4 +45,7 @@ public class UserPublicProfileDTO {
 
     public boolean isFollowingByMe() { return followingByMe; }
     public void setFollowingByMe(boolean followingByMe) { this.followingByMe = followingByMe; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

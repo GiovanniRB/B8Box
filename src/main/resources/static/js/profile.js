@@ -57,9 +57,7 @@ async function readBody(response) {
 }
 
 function clearSessionAndGoHome() {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(USERNAME_KEY);
-    window.location.href = '/';
+    B8.logout();
 }
 
 function formatDate(isoString) {
@@ -98,7 +96,9 @@ async function loadProfile() {
         profileCreated.textContent = formatDate(user.createdAt);
         userNameNav.textContent = user.username;
         localStorage.setItem(USERNAME_KEY, user.username);
+        B8.updateNavUser(user);
 
+        renderAvatar(user);
         renderBioAndGenres(user);
 
         // Formulário
@@ -296,6 +296,119 @@ deleteBtn.addEventListener('click', async () => {
     }
 });
 
+
+// ============================================================
+// FOTO DE PERFIL
+// ============================================================
+// O navegador já recorta o quadrado central e reduz para 512x512 antes de
+// enviar: assim uma foto de celular de 8 MB vira ~60 KB e passa no limite
+// de 2 MB do servidor (que ainda faz o tratamento final para 256x256).
+// Desenhar num canvas também aplica a rotação do EXIF (foto "deitada").
+const AVATAR_UPLOAD_SIZE = 512;
+const avatarInput = document.getElementById('avatar-input');
+const avatarRemoveBtn = document.getElementById('avatar-remove-btn');
+const avatarSaveBtn = document.getElementById('avatar-save-btn');
+const avatarPreview = document.getElementById('avatar-preview');
+const avatarModalEl = document.getElementById('avatarModal');
+let pendingAvatarBlob = null;
+
+function renderAvatar(user) {
+    const box = document.getElementById('profile-avatar');
+    box.innerHTML = B8.avatarHtml(user.avatarUrl, user.username, 'b8-avatar-fill');
+    avatarRemoveBtn.classList.toggle('d-none', !user.avatarUrl);
+}
+
+function loadImage(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagem inválida')); };
+        img.src = url;
+    });
+}
+
+async function squareJpeg(file) {
+    const img = await loadImage(file);
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const size = Math.min(side, AVATAR_UPLOAD_SIZE);
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; // fundo para PNG com transparência
+    ctx.fillRect(0, 0, size, size);
+    ctx.drawImage(img,
+        (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side,
+        0, 0, size, size);
+    return new Promise((resolve, reject) =>
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('falha ao converter')), 'image/jpeg', 0.9));
+}
+
+document.getElementById('avatar-change-btn').addEventListener('click', () => avatarInput.click());
+
+avatarInput.addEventListener('change', async () => {
+    const file = avatarInput.files[0];
+    avatarInput.value = ''; // permite escolher o mesmo arquivo de novo
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+        showMessage('❌ Escolha uma imagem JPG ou PNG.', 'danger');
+        return;
+    }
+    try {
+        pendingAvatarBlob = await squareJpeg(file);
+    } catch (err) {
+        console.error(err);
+        showMessage('❌ Não foi possível abrir essa imagem.', 'danger');
+        return;
+    }
+    if (avatarPreview.src) URL.revokeObjectURL(avatarPreview.src);
+    avatarPreview.src = URL.createObjectURL(pendingAvatarBlob);
+    bootstrap.Modal.getOrCreateInstance(avatarModalEl).show();
+});
+
+avatarSaveBtn.addEventListener('click', async () => {
+    if (!pendingAvatarBlob) return;
+    const form = new FormData();
+    form.append('file', pendingAvatarBlob, 'avatar.jpg');
+    avatarSaveBtn.disabled = true;
+    try {
+        // sem Content-Type: o navegador monta o multipart com o "boundary"
+        const res = await fetch(`${API_BASE}/users/me/avatar`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: form
+        });
+        const body = await readBody(res);
+        if (!res.ok) {
+            throw new Error((body && body.error) || 'Não foi possível salvar a foto.');
+        }
+        bootstrap.Modal.getOrCreateInstance(avatarModalEl).hide();
+        pendingAvatarBlob = null;
+        const me = { username: profileUsername.textContent, avatarUrl: body.avatarUrl };
+        renderAvatar(me);
+        B8.updateNavUser(me);
+        showMessage('✅ Foto de perfil atualizada!', 'success');
+    } catch (err) {
+        showMessage(`❌ ${err.message}`, 'danger');
+    } finally {
+        avatarSaveBtn.disabled = false;
+    }
+});
+
+avatarRemoveBtn.addEventListener('click', async () => {
+    if (!confirm('Remover sua foto de perfil?')) return;
+    try {
+        const res = await fetch(`${API_BASE}/users/me/avatar`, { method: 'DELETE', headers: authHeaders() });
+        if (!res.ok) throw new Error('Não foi possível remover a foto.');
+        const me = { username: profileUsername.textContent, avatarUrl: null };
+        renderAvatar(me);
+        B8.updateNavUser(me);
+        showMessage('✅ Foto removida.', 'success');
+    } catch (err) {
+        showMessage(`❌ ${err.message}`, 'danger');
+    }
+});
 
 // ============================================================
 // INIT

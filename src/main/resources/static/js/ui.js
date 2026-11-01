@@ -125,13 +125,28 @@
     }
 
     // ------------------------------------------------------------
+    // AVATAR (foto de perfil ou, sem foto, a inicial do username)
+    // url = avatarUrl que vem da API (já é um caminho nosso, /api/public/...)
+    // size = classe extra de tamanho: b8-avatar-xs, b8-avatar-sm, b8-avatar-fill
+    // ------------------------------------------------------------
+    function avatarHtml(url, username, size) {
+        const cls = `b8-avatar ${size || ''}`;
+        if (url) {
+            return `<img src="${escapeHtml(url)}" class="${cls}" alt="" loading="lazy">`;
+        }
+        const initial = String(username || '').trim().charAt(0).toUpperCase() || '?';
+        return `<span class="${cls} b8-avatar-initial" aria-hidden="true">${escapeHtml(initial)}</span>`;
+    }
+
+    // ------------------------------------------------------------
     // ITEM DO FEED / DA LISTA DE AVALIAÇÕES DE UM PERFIL
     // it = FeedItemDTO; myId = id de quem está vendo (para não oferecer
     // "curtir" na própria avaliação).
     // ------------------------------------------------------------
     function renderFeedItem(it, myId) {
         const profileUrl = `user-profile.html?id=${Number(it.userId)}`;
-        const who = `<a href="${profileUrl}" class="fw-semibold text-white text-decoration-none">@${escapeHtml(it.username)}</a>`;
+        const who = `<a href="${profileUrl}" class="feed-who fw-semibold text-white text-decoration-none">` +
+            `${avatarHtml(it.avatarUrl, it.username, 'b8-avatar-xs')}@${escapeHtml(it.username)}</a>`;
         const when = escapeHtml(timeAgo(it.createdAt));
 
         if (it.type === 'playlist') {
@@ -180,6 +195,9 @@
     // ------------------------------------------------------------
     const TOKEN_KEY = 'b8box_token';
     const USERNAME_KEY = 'b8box_username';
+    // URL da minha foto, guardada para a navbar já nascer com ela em todas
+    // as páginas (é atualizada quando home, dashboard ou perfil leem /users/me)
+    const AVATAR_KEY = 'b8box_avatar';
 
     function isLoggedIn() {
         return !!localStorage.getItem(TOKEN_KEY);
@@ -188,7 +206,29 @@
     function logout() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USERNAME_KEY);
+        localStorage.removeItem(AVATAR_KEY);
         window.location.href = '/';
+    }
+
+    function navAvatarHtml(url) {
+        return url
+            ? avatarHtml(url, '', 'b8-avatar-xs')
+            : '<i class="bi bi-person-circle" aria-hidden="true"></i>';
+    }
+
+    // Chamado com a resposta de /users/me: atualiza nome e foto da navbar
+    // e guarda a foto para as próximas páginas.
+    function updateNavUser(me) {
+        if (!me) return;
+        if (me.avatarUrl) {
+            localStorage.setItem(AVATAR_KEY, me.avatarUrl);
+        } else {
+            localStorage.removeItem(AVATAR_KEY);
+        }
+        const nameEl = document.getElementById('user-name');
+        if (nameEl && me.username) nameEl.textContent = me.username;
+        const avatarEl = document.getElementById('nav-avatar');
+        if (avatarEl) avatarEl.innerHTML = navAvatarHtml(me.avatarUrl);
     }
 
     function renderNavbar(nav) {
@@ -208,7 +248,7 @@
                 ${link('explore', '/explore.html', 'Explorar')}
                 ${link('dashboard', '/dashboard.html', 'Dashboard')}
                 <a href="/profile.html" class="navbar-text text-white text-decoration-none ${active === 'profile' ? 'active' : ''}" title="Configurar perfil">
-                    <i class="bi bi-person-circle" aria-hidden="true"></i> <span id="user-name">${escapeHtml(shownName)}</span>
+                    <span id="nav-avatar">${navAvatarHtml(localStorage.getItem(AVATAR_KEY))}</span> <span id="user-name">${escapeHtml(shownName)}</span>
                 </a>
                 <button type="button" class="btn-pill-outline btn-sm" id="logout-btn"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair</button>`;
         } else {
@@ -258,8 +298,10 @@
         likeCountHtml,
         bindLikeButtons,
         renderFeedItem,
+        avatarHtml,
         isLoggedIn,
         logout,
+        updateNavUser,
         renderNavbar
     };
 

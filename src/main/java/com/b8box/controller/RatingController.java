@@ -9,6 +9,7 @@ import com.b8box.repository.AlbumRepository;
 import com.b8box.repository.MusicRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
+import com.b8box.service.AvatarService;
 import com.b8box.service.LikeService;
 import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -251,6 +252,7 @@ public class RatingController {
         if (r.getUser() != null) {
             dto.setUserId(r.getUser().getId());
             dto.setUsername(r.getUser().getUsername());
+            dto.setAvatarUrl(AvatarService.avatarUrl(r.getUser()));
         }
         dto.setCreatedAt(r.getCreatedAt() != null ? r.getCreatedAt().toString() : null);
         return dto;

@@ -9,14 +9,18 @@ import com.b8box.repository.PlaylistRepository;
 import com.b8box.repository.RatingLikeRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
+import com.b8box.service.AvatarService;
 import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,6 +50,9 @@ public class UserController {
 
     @Autowired
     private RatingLikeRepository ratingLikeRepository;
+
+    @Autowired
+    private AvatarService avatarService;
 
     // Corpo do PUT /api/users/me. Campos nulos = "não alterar" (assim um
     // cliente que só manda o username continua funcionando).
@@ -153,6 +160,35 @@ public class UserController {
     }
 
     // ============================================================
+    // FOTO DE PERFIL
+    // ============================================================
+    // Recebe a imagem como multipart (campo "file"). A validação e o
+    // tratamento (recorte, tamanho, remoção de metadados) ficam no AvatarService.
+    @PutMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        User user = getAuthenticatedUser();
+        try {
+            String url = avatarService.save(user, file);
+            return ResponseEntity.ok(Map.of("avatarUrl", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/me/avatar")
+    public ResponseEntity<?> deleteAvatar() {
+        avatarService.delete(getAuthenticatedUser());
+        return ResponseEntity.noContent().build();
+    }
+
+    // Arquivo acima do limite do Spring (spring.servlet.multipart.max-file-size):
+    // responde 400 com mensagem amigável em vez de um erro 500 genérico.
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleTooLarge(MaxUploadSizeExceededException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", "A imagem deve ter no máximo 2 MB."));
+    }
+
+    // ============================================================
     // DELETAR CONTA
     // ============================================================
     @DeleteMapping("/me")
@@ -167,6 +203,7 @@ public class UserController {
         // Curtidas que a pessoa deu em avaliações de OUTROS usuários (as curtidas
         // recebidas nas avaliações dela somem junto com as avaliações).
         ratingLikeRepository.deleteByUserId(user.getId());
+        avatarService.delete(user);
         userRepository.delete(user);
         return ResponseEntity.ok("✅ Conta deletada com sucesso!");
     }
@@ -186,7 +223,7 @@ public class UserController {
         return userRepository.findAll().stream()
                 .filter(u -> u.getUsername() != null && u.getUsername().toLowerCase().contains(query))
                 .limit(20)
-                .map(u -> new UserSearchResultDTO(u.getId(), u.getUsername()))
+                .map(u -> new UserSearchResultDTO(u.getId(), u.getUsername(), AvatarService.avatarUrl(u)))
                 .collect(Collectors.toList());
     }
 
@@ -221,6 +258,7 @@ public class UserController {
         dto.setFollowersCount(followersCount);
         dto.setFollowingCount(followingCount);
         dto.setFollowingByMe(followingByMe);
+        dto.setAvatarUrl(AvatarService.avatarUrl(target));
 
         return ResponseEntity.ok(dto);
     }

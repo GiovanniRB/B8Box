@@ -358,7 +358,7 @@ async function loadRatings() {
 
         listEl.innerHTML = others.map(r => {
             const uname = r.username || 'Usuário';
-            const initial = escapeHtml(uname.charAt(0).toUpperCase());
+            const avatar = B8.avatarHtml(r.avatarUrl, uname, 'b8-avatar-sm');
             // O nome (e o avatar) levam pro perfil público de quem avaliou.
             // Sem userId (não deveria acontecer) cai num texto simples.
             const profileHref = r.userId != null ? `user-profile.html?id=${r.userId}` : null;
@@ -366,8 +366,8 @@ async function loadRatings() {
                 ? `<a href="${profileHref}" class="fw-semibold text-white text-decoration-none">@${escapeHtml(uname)}</a>`
                 : `<span class="fw-semibold">@${escapeHtml(uname)}</span>`;
             const avatarHtml = profileHref
-                ? `<a href="${profileHref}" class="avatar-sm text-white text-decoration-none">${initial}</a>`
-                : `<div class="avatar-sm">${initial}</div>`;
+                ? `<a href="${profileHref}" class="text-white text-decoration-none flex-shrink-0">${avatar}</a>`
+                : avatar;
             return `
                 <div class="card review-card">
                     <div class="d-flex align-items-center gap-2 mb-2">

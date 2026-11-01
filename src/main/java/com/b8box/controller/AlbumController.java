@@ -8,6 +8,7 @@ import com.b8box.model.User;
 import com.b8box.repository.AlbumRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
+import com.b8box.service.AvatarService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -167,6 +168,7 @@ public class AlbumController {
                 rdto.setReview(r.getReview());
                 rdto.setUsername(r.getUser().getUsername());
                 rdto.setUserId(r.getUser().getId());
+                rdto.setAvatarUrl(AvatarService.avatarUrl(r.getUser()));
                 rdto.setCreatedAt(r.getCreatedAt().toString());
                 return rdto;
             })

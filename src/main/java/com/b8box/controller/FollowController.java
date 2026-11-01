@@ -4,6 +4,7 @@ import com.b8box.model.Follow;
 import com.b8box.model.User;
 import com.b8box.repository.FollowRepository;
 import com.b8box.repository.UserRepository;
+import com.b8box.service.AvatarService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -113,6 +114,7 @@ public class FollowController {
         Map<String, Object> row = new HashMap<>();
         row.put("id", u.getId());
         row.put("username", u.getUsername());
+        row.put("avatarUrl", AvatarService.avatarUrl(u));
         row.put("isMe", u.getId().equals(meId));
         row.put("followingByMe", followRepository.existsByFollowerIdAndFollowedId(meId, u.getId()));
         return row;

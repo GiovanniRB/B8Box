@@ -3,6 +3,7 @@ package com.b8box.dto;
 import com.b8box.model.Album;
 import com.b8box.model.Playlist;
 import com.b8box.model.Rating;
+import com.b8box.service.AvatarService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,7 @@ public class FeedItemDTO {
     // quem fez
     private Long userId;
     private String username;
+    private String avatarUrl;
 
     // avaliação
     private Long ratingId;
@@ -51,6 +53,7 @@ public class FeedItemDTO {
         dto.createdAt = r.getCreatedAt() != null ? r.getCreatedAt().toString() : null;
         dto.userId = r.getUser().getId();
         dto.username = r.getUser().getUsername();
+        dto.avatarUrl = AvatarService.avatarUrl(r.getUser());
         dto.ratingId = r.getId();
         dto.score = r.getScore();
         dto.review = r.getReview();
@@ -72,6 +75,7 @@ public class FeedItemDTO {
         dto.createdAt = p.getCreatedAt() != null ? p.getCreatedAt().toString() : null;
         dto.userId = p.getUser().getId();
         dto.username = p.getUser().getUsername();
+        dto.avatarUrl = AvatarService.avatarUrl(p.getUser());
         dto.playlistId = p.getId();
         dto.playlistTitle = p.getTitle();
         dto.playlistDescription = p.getDescription();
@@ -82,6 +86,7 @@ public class FeedItemDTO {
     public String getCreatedAt() { return createdAt; }
     public Long getUserId() { return userId; }
     public String getUsername() { return username; }
+    public String getAvatarUrl() { return avatarUrl; }
     public Long getRatingId() { return ratingId; }
     public Double getScore() { return score; }
     public String getReview() { return review; }

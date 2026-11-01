@@ -133,7 +133,7 @@ async function searchProfiles(query) {
             <div class="d-flex flex-column gap-2">
                 ${data.map(user => `
                     <a href="user-profile.html?id=${user.id}" class="card p-3 d-flex flex-row align-items-center gap-3 text-decoration-none text-white">
-                        <div style="width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; background: linear-gradient(135deg, var(--purple-1), var(--purple-2));">${escapeHtml((user.username || '?').charAt(0).toUpperCase())}</div>
+                        ${B8.avatarHtml(user.avatarUrl, user.username, 'b8-avatar-sm')}
                         <span class="fw-semibold">@${escapeHtml(user.username)}</span>
                         <i class="bi bi-chevron-right ms-auto"></i>
                     </a>

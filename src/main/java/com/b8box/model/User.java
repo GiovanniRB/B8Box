@@ -52,6 +52,12 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    // Quando a foto de perfil foi trocada pela última vez (null = sem foto).
+    // A imagem em si fica na tabela user_avatars; aqui guardamos só a data,
+    // que serve para montar a URL da foto sem precisar ler os bytes.
+    @Column(name = "avatar_updated_at")
+    private LocalDateTime avatarUpdatedAt;
+
     // Construtor vazio (OBRIGATÓRIO para JPA)
     public User() {}
 
@@ -130,5 +136,13 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getAvatarUpdatedAt() {
+        return avatarUpdatedAt;
+    }
+
+    public void setAvatarUpdatedAt(LocalDateTime avatarUpdatedAt) {
+        this.avatarUpdatedAt = avatarUpdatedAt;
     }
 }

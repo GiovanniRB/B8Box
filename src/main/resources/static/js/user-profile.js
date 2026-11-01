@@ -84,9 +84,9 @@ async function loadProfile() {
         isOwnProfile = myId != null && String(myId) === String(profileUserId);
 
         document.getElementById('profile-username').innerText = '@' + profile.username;
-        // CORRIGIDO: antes isso fazia innerText = '' e apagava o ícone do
-        // avatar; agora mostra a inicial do nome.
-        document.getElementById('profile-avatar').textContent = (profile.username || '?').charAt(0).toUpperCase();
+        // foto de perfil ou, sem foto, a inicial do nome
+        document.getElementById('profile-avatar').innerHTML =
+            B8.avatarHtml(profile.avatarUrl, profile.username, 'b8-avatar-fill');
 
         if (profile.createdAt) {
             const date = new Date(profile.createdAt);
@@ -248,13 +248,11 @@ function buildUserRow(u) {
     const row = document.createElement('div');
     row.className = 'd-flex align-items-center gap-3 py-2';
 
+    // avatarHtml escapa a URL e o nome, então o innerHTML aqui é seguro
     const avatar = document.createElement('a');
     avatar.href = `user-profile.html?id=${u.id}`;
-    avatar.className = 'text-white text-decoration-none';
-    avatar.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; ' +
-        'justify-content: center; font-weight: 700; flex-shrink: 0; ' +
-        'background: linear-gradient(135deg, var(--purple-1), var(--purple-2));';
-    avatar.textContent = (u.username || '?').charAt(0).toUpperCase();
+    avatar.className = 'text-white text-decoration-none flex-shrink-0';
+    avatar.innerHTML = B8.avatarHtml(u.avatarUrl, u.username, 'b8-avatar-sm');
 
     const name = document.createElement('a');
     name.href = `user-profile.html?id=${u.id}`;

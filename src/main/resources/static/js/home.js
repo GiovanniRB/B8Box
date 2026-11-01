@@ -54,6 +54,7 @@
                 const navName = document.getElementById('user-name');
                 if (navName) navName.textContent = me.username;
             }
+            B8.updateNavUser(me);
             return me;
         } catch (err) {
             console.error('Erro ao carregar usuário:', err);

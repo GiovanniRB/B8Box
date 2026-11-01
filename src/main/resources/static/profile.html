@@ -34,9 +34,16 @@
 
     <!-- HEADER -->
     <div class="container-fluid px-5 mb-4" style="position:relative; z-index:2;">
-        <div class="d-flex align-items-center gap-4">
-            <div class="profile-avatar">
-                <i class="bi bi-person-fill"></i>
+        <div class="d-flex flex-wrap align-items-center gap-4">
+            <div class="avatar-editor">
+                <div class="profile-avatar" id="profile-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <button type="button" class="btn-pill-outline btn-sm" id="avatar-change-btn">
+                    <i class="bi bi-camera" aria-hidden="true"></i> Trocar foto
+                </button>
+                <button type="button" class="btn btn-link btn-sm text-danger p-0 d-none" id="avatar-remove-btn">Remover foto</button>
+                <input type="file" id="avatar-input" accept="image/jpeg,image/png" class="d-none">
             </div>
             <div>
                 <h1 class="fw-bold mb-1" id="profile-username">Carregando...</h1>
@@ -166,6 +173,26 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- MODAL: prévia da nova foto de perfil -->
+    <div class="modal fade" id="avatarModal" tabindex="-1" aria-labelledby="avatar-modal-title">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header" style="border-bottom:1px solid var(--border-soft);">
+                    <h5 class="modal-title" id="avatar-modal-title">Nova foto de perfil</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="avatar-preview" class="avatar-preview" alt="Prévia da nova foto">
+                    <p class="text-muted small mt-3 mb-0">A foto é recortada no centro em formato quadrado.</p>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--border-soft);">
+                    <button type="button" class="btn-pill-outline" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="avatar-save-btn">Salvar foto</button>
+                </div>
+            </div>
         </div>
     </div>
 

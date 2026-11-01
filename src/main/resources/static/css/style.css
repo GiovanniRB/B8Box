@@ -413,6 +413,36 @@ h1, h2, h3, h4, h5, .display-headline {
     flex-shrink: 0;
 }
 
+/* Foto (ou inicial) dentro do círculo grande dos cabeçalhos de perfil */
+.profile-avatar, .profile-avatar-placeholder { overflow: hidden; }
+.profile-avatar .b8-avatar-initial, .profile-avatar-placeholder .b8-avatar-initial { font-size: 2.6rem; }
+
+/* Avatar pequeno reutilizável (B8.avatarHtml): foto ou inicial */
+.b8-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    vertical-align: middle;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--purple-1), var(--purple-2));
+}
+.b8-avatar-xs { width: 22px; height: 22px; font-size: 0.7rem; }
+.b8-avatar-sm { width: 38px; height: 38px; font-size: 0.95rem; }
+.b8-avatar-fill { width: 100%; height: 100%; }
+.feed-who { display: inline-flex; align-items: center; gap: 0.4rem; }
+#nav-avatar .b8-avatar-xs { margin-top: -2px; }
+
+/* Troca de foto na tela de perfil */
+.avatar-editor { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.avatar-preview { width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 3px solid var(--purple-1); }
+
 /* ============================================================
    CARDS DE ESTATÍSTICA
    ============================================================ */
@@ -495,8 +525,8 @@ h1, h2, h3, h4, h5, .display-headline {
     background: linear-gradient(135deg, var(--purple-1), #2a1a52);
 }
 .feed-item .feed-body { flex: 1 1 auto; min-width: 0; }
-.feed-item .feed-meta { font-size: 0.85rem; color: var(--text-muted); }
-.feed-item .feed-when { margin-left: 0.35rem; opacity: 0.8; }
+.feed-item .feed-meta { font-size: 0.85rem; color: var(--text-muted); display: flex; flex-wrap: wrap; align-items: center; column-gap: 0.35rem; }
+.feed-item .feed-when { opacity: 0.8; }
 .feed-item .feed-title {
     display: block;
     color: var(--text-white);

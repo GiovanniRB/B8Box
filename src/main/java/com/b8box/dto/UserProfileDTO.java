@@ -1,6 +1,7 @@
 package com.b8box.dto;
 
 import com.b8box.model.User;
+import com.b8box.service.AvatarService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,7 @@ public class UserProfileDTO {
     private List<String> favoriteGenres = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String avatarUrl;
 
     public UserProfileDTO() {}
 
@@ -26,6 +28,7 @@ public class UserProfileDTO {
         dto.setFavoriteGenres(new ArrayList<>(user.getFavoriteGenres()));
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
+        dto.setAvatarUrl(AvatarService.avatarUrl(user));
         return dto;
     }
 
@@ -40,6 +43,9 @@ public class UserProfileDTO {
 
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 
     public List<String> getFavoriteGenres() { return favoriteGenres; }
     public void setFavoriteGenres(List<String> favoriteGenres) { this.favoriteGenres = favoriteGenres; }
