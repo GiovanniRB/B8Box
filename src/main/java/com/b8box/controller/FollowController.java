@@ -5,6 +5,7 @@ import com.b8box.model.User;
 import com.b8box.repository.FollowRepository;
 import com.b8box.repository.UserRepository;
 import com.b8box.service.AvatarService;
+import com.b8box.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,9 @@ public class FollowController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     // ============================================================
     // SEGUIR UM USUÁRIO
     // ============================================================
@@ -48,6 +52,7 @@ public class FollowController {
         }
 
         followRepository.save(new Follow(me, target));
+        notificationService.onFollow(me, target);
         return ResponseEntity.status(HttpStatus.CREATED).body(buildStatus(userId, me.getId()));
     }
 
@@ -59,6 +64,7 @@ public class FollowController {
     public ResponseEntity<?> unfollow(@PathVariable Long userId) {
         User me = getAuthenticatedUser();
         followRepository.deleteByFollowerIdAndFollowedId(me.getId(), userId);
+        notificationService.onUnfollow(me.getId(), userId);
         return ResponseEntity.ok(buildStatus(userId, me.getId()));
     }
 

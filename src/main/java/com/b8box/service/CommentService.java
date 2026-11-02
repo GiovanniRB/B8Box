@@ -25,6 +25,9 @@ public class CommentService {
     @Autowired
     private RatingCommentRepository commentRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     public List<Map<String, Object>> list(Long ratingId, User me) {
         return commentRepository.findByRatingIdWithUser(ratingId).stream()
                 .map(c -> toMap(c, me))
@@ -33,6 +36,7 @@ public class CommentService {
 
     public Map<String, Object> add(User user, Rating rating, String text) {
         RatingComment saved = commentRepository.save(new RatingComment(user, rating, text));
+        notificationService.onComment(user, rating, saved.getId(), text);
         return toMap(saved, user);
     }
 
@@ -43,6 +47,7 @@ public class CommentService {
         if (!canDelete(c, me)) {
             throw new SecurityException("❌ Você não pode apagar este comentário.");
         }
+        notificationService.onCommentDeleted(c.getId());
         commentRepository.delete(c);
         return true;
     }

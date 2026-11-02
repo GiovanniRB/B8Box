@@ -440,6 +440,118 @@
         if (avatarEl) avatarEl.innerHTML = navAvatarHtml(me.avatarUrl);
     }
 
+    // ------------------------------------------------------------
+    // NOTIFICAÇÕES (sino da navbar, só para quem está logado)
+    // A bolinha mostra os não lidos (consultados a cada minuto com a aba
+    // visível); abrir o painel carrega a lista e marca tudo como lido.
+    // ------------------------------------------------------------
+    const NOTIF_POLL_MS = 60000;
+
+    function notifHeaders() {
+        return { 'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}` };
+    }
+
+    function setNotifBadge(count) {
+        const badge = document.getElementById('notif-badge');
+        if (!badge) return;
+        badge.textContent = count > 9 ? '9+' : String(count);
+        badge.classList.toggle('d-none', !count);
+        const btn = document.getElementById('notif-btn');
+        if (btn) btn.setAttribute('aria-label', count ? `Notificações (${count} não lidas)` : 'Notificações');
+    }
+
+    // Texto e link de cada aviso. Tudo que vem do usuário passa pelo escapeHtml.
+    function notificationItemHtml(n) {
+        const who = `<strong>@${escapeHtml(n.actorUsername)}</strong>`;
+        const album = n.albumTitle ? `<strong>${escapeHtml(n.albumTitle)}</strong>` : 'um álbum';
+        const preview = n.preview ? `<span class="notif-preview">“${escapeHtml(n.preview)}”</span>` : '';
+        let text;
+        switch (n.type) {
+            case 'FOLLOW':  text = `${who} começou a seguir você`; break;
+            case 'LIKE':    text = `${who} curtiu sua avaliação de ${album}`; break;
+            case 'COMMENT': text = `${who} comentou na sua avaliação de ${album}`; break;
+            case 'REPLY':   text = `${who} respondeu na avaliação de ${album} que você comentou`; break;
+            default:        text = who;
+        }
+        const href = n.type !== 'FOLLOW' && n.albumId != null
+            ? `/album-detail.html?id=${Number(n.albumId)}`
+            : `/user-profile.html?id=${Number(n.actorId)}`;
+        return `
+            <a href="${href}" class="notif-item ${n.read ? '' : 'unread'}">
+                ${avatarHtml(n.actorAvatarUrl, n.actorUsername, 'b8-avatar-sm')}
+                <span class="notif-text">
+                    <span>${text}</span>
+                    ${preview}
+                    <span class="notif-when">${escapeHtml(timeAgo(n.createdAt))}</span>
+                </span>
+            </a>`;
+    }
+
+    async function refreshNotifCount() {
+        if (!isLoggedIn() || document.hidden) return;
+        try {
+            const res = await fetch('/api/notifications/unread-count', { headers: notifHeaders() });
+            if (!res.ok) return;
+            setNotifBadge((await res.json()).count);
+        } catch (err) {
+            // sem rede: tenta de novo no próximo minuto
+        }
+    }
+
+    async function openNotifications(panel) {
+        const list = panel.querySelector('.notif-list');
+        list.innerHTML = '<div class="notif-empty">Carregando...</div>';
+        try {
+            const res = await fetch('/api/notifications', { headers: notifHeaders() });
+            if (!res.ok) throw new Error('Falha ao carregar notificações');
+            const items = await res.json();
+            list.innerHTML = items.length
+                ? items.map(notificationItemHtml).join('')
+                : '<div class="notif-empty">Nada por aqui ainda. Quando alguém seguir você, curtir ou comentar suas avaliações, aparece aqui.</div>';
+            if (items.some(n => !n.read)) {
+                await fetch('/api/notifications/read', { method: 'POST', headers: notifHeaders() });
+                setNotifBadge(0);
+            }
+        } catch (err) {
+            console.error(err);
+            list.innerHTML = '<div class="notif-empty">Não foi possível carregar as notificações agora.</div>';
+        }
+    }
+
+    function initNotifications(nav) {
+        const btn = nav.querySelector('#notif-btn');
+        const panel = nav.querySelector('#notif-panel');
+        if (!btn || !panel) return;
+
+        const close = () => {
+            panel.classList.add('d-none');
+            btn.setAttribute('aria-expanded', 'false');
+        };
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!panel.classList.contains('d-none')) {
+                close();
+                return;
+            }
+            panel.classList.remove('d-none');
+            btn.setAttribute('aria-expanded', 'true');
+            openNotifications(panel);
+        });
+        document.addEventListener('click', (e) => {
+            if (!panel.classList.contains('d-none') && !panel.contains(e.target)) close();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !panel.classList.contains('d-none')) {
+                close();
+                btn.focus();
+            }
+        });
+
+        refreshNotifCount();
+        setInterval(refreshNotifCount, NOTIF_POLL_MS);
+        document.addEventListener('visibilitychange', refreshNotifCount);
+    }
+
     function renderNavbar(nav) {
         const active = nav.dataset.b8Navbar || '';
         const link = (key, href, label) =>
@@ -447,7 +559,22 @@
             `${active === key ? ' aria-current="page"' : ''}>${label}</a>`;
 
         let right;
+        let bell = '';
         if (isLoggedIn()) {
+            // Fica fora do menu ☰: no celular aparece ao lado dele;
+            // no computador, depois dos links (order-lg-last).
+            bell = `
+                <div class="notif-wrap order-lg-last ms-auto ms-lg-3">
+                    <button type="button" class="notif-btn" id="notif-btn" aria-expanded="false"
+                            aria-controls="notif-panel" aria-label="Notificações" title="Notificações">
+                        <i class="bi bi-bell" aria-hidden="true"></i>
+                        <span class="notif-badge d-none" id="notif-badge"></span>
+                    </button>
+                    <div class="notif-panel d-none" id="notif-panel" role="region" aria-label="Notificações">
+                        <div class="notif-head">Notificações</div>
+                        <div class="notif-list"></div>
+                    </div>
+                </div>`;
             // o nome guardado pode ser o e-mail (login com e-mail): nesse caso
             // fica vazio até a página confirmar o username em /users/me
             const stored = localStorage.getItem(USERNAME_KEY) || '';
@@ -474,6 +601,7 @@
         nav.innerHTML = `
             <div class="container-fluid px-5">
                 <a class="navbar-brand" href="/"><i class="bi bi-music-note-beamed" aria-hidden="true"></i> B8Box</a>
+                ${bell}
                 <button class="navbar-toggler b8-nav-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#b8-nav-links" aria-controls="b8-nav-links" aria-expanded="false" aria-label="Abrir menu">
                     <i class="bi bi-list" aria-hidden="true"></i>
@@ -485,6 +613,7 @@
 
         const logoutBtn = nav.querySelector('#logout-btn');
         if (logoutBtn) logoutBtn.addEventListener('click', logout);
+        initNotifications(nav);
 
         nav.querySelectorAll('[data-b8-login]').forEach(el => {
             el.addEventListener('click', (e) => {

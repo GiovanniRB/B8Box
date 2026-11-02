@@ -51,6 +51,11 @@ public class Rating {
     @JsonIgnore
     private List<RatingComment> comments = new ArrayList<>();
 
+    // Avisos (curtiu/comentou) ligados a esta avaliação: somem junto também.
+    @OneToMany(mappedBy = "rating", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Notification> notifications = new ArrayList<>();
+
     // Construtor vazio (OBRIGATÓRIO para JPA)
     public Rating() {}
 

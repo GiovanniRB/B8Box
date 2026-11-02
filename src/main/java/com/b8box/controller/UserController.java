@@ -11,6 +11,7 @@ import com.b8box.repository.RatingLikeRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
 import com.b8box.service.AvatarService;
+import com.b8box.service.NotificationService;
 import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -57,6 +58,9 @@ public class UserController {
 
     @Autowired
     private AvatarService avatarService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // Corpo do PUT /api/users/me. Campos nulos = "não alterar" (assim um
     // cliente que só manda o username continua funcionando).
@@ -199,6 +203,9 @@ public class UserController {
     @Transactional
     public ResponseEntity<?> deleteAccount() {
         User user = getAuthenticatedUser();
+        // Avisos que a pessoa recebeu ou gerou (os ligados às avaliações
+        // dela também sairiam junto com elas, mas os outros não).
+        notificationService.deleteAllFor(user.getId());
         // A tabela follows aponta pra users sem cascade: sem apagar essas linhas
         // antes, apagar a conta de quem tem seguidores (ou segue alguém) dava
         // erro de chave estrangeira.

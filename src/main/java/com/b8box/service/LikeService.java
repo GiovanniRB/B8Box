@@ -25,12 +25,16 @@ public class LikeService {
     @Autowired
     private RatingLikeRepository ratingLikeRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     public void like(User user, Rating rating) {
         if (ratingLikeRepository.existsByUserIdAndRatingId(user.getId(), rating.getId())) {
             return;
         }
         try {
             ratingLikeRepository.save(new RatingLike(user, rating));
+            notificationService.onLike(user, rating);
         } catch (DataIntegrityViolationException e) {
             // dois cliques ao mesmo tempo: a restrição única barrou o segundo,
             // e a curtida já existe — nada a fazer
@@ -38,8 +42,10 @@ public class LikeService {
     }
 
     public void unlike(Long userId, Long ratingId) {
-        ratingLikeRepository.findByUserIdAndRatingId(userId, ratingId)
-                .ifPresent(ratingLikeRepository::delete);
+        ratingLikeRepository.findByUserIdAndRatingId(userId, ratingId).ifPresent(like -> {
+            ratingLikeRepository.delete(like);
+            notificationService.onUnlike(userId, ratingId);
+        });
     }
 
     /** Estado atual de uma avaliação para quem está vendo: { likesCount, likedByMe }. */
