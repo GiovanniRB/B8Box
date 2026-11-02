@@ -290,6 +290,34 @@
     }
 
     // ------------------------------------------------------------
+    // OBSESSÃO DO MOMENTO (álbum em destaque no perfil por 7 dias)
+    // O backend só devolve a obsessão enquanto ela vale; aqui é só desenho.
+    // ------------------------------------------------------------
+    function obsessionDaysLeft(o) {
+        const ms = new Date(o.expiresAt).getTime() - Date.now();
+        return Math.max(1, Math.ceil(ms / 86400000));
+    }
+
+    // Destaque do álbum: capa, título e artista com link para o álbum.
+    // "extra" é o HTML (já seguro) que vai embaixo: prazo, botões etc.
+    function obsessionHtml(o, extra = '') {
+        const url = `album-detail.html?id=${Number(o.albumId)}`;
+        const cover = o.coverUrl
+            ? `<img src="${escapeHtml(o.coverUrl)}" alt="Capa de ${escapeHtml(o.title)}" class="obsession-cover">`
+            : `<span class="obsession-cover obsession-cover-empty"><i class="bi bi-vinyl" aria-hidden="true"></i></span>`;
+        return `
+            <div class="obsession-box">
+                <a href="${url}" class="flex-shrink-0">${cover}</a>
+                <div class="obsession-info">
+                    <span class="obsession-label"><i class="bi bi-fire" aria-hidden="true"></i> Obsessão do momento</span>
+                    <a href="${url}" class="obsession-title">${escapeHtml(o.title)}</a>
+                    <span class="obsession-artist">${escapeHtml(o.artist)}</span>
+                    ${extra}
+                </div>
+            </div>`;
+    }
+
+    // ------------------------------------------------------------
     // AVATAR (foto de perfil ou, sem foto, a inicial do username)
     // url = avatarUrl que vem da API (já é um caminho nosso, /api/public/...)
     // size = classe extra de tamanho: b8-avatar-xs, b8-avatar-sm, b8-avatar-fill
@@ -637,6 +665,8 @@
         bindLikeButtons,
         commentButtonHtml,
         bindCommentButtons,
+        obsessionHtml,
+        obsessionDaysLeft,
         renderFeedItem,
         avatarHtml,
         playlistCoverHtml,

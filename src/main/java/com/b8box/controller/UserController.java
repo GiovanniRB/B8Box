@@ -1,9 +1,12 @@
 package com.b8box.controller;
 
+import com.b8box.dto.ObsessionDTO;
 import com.b8box.dto.UserProfileDTO;
 import com.b8box.dto.UserPublicProfileDTO;
 import com.b8box.dto.UserSearchResultDTO;
+import com.b8box.model.Album;
 import com.b8box.model.User;
+import com.b8box.repository.AlbumRepository;
 import com.b8box.repository.FollowRepository;
 import com.b8box.repository.PlaylistRepository;
 import com.b8box.repository.RatingCommentRepository;
@@ -62,9 +65,15 @@ public class UserController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private AlbumRepository albumRepository;
+
     // Corpo do PUT /api/users/me. Campos nulos = "não alterar" (assim um
     // cliente que só manda o username continua funcionando).
     public record UpdateProfileRequest(String username, String bio, List<String> favoriteGenres) {}
+
+    // Corpo do PUT /api/users/me/obsession
+    public record ObsessionRequest(Long albumId) {}
 
     // ============================================================
     // PERFIL (o meu, autenticado)
@@ -197,6 +206,37 @@ public class UserController {
     }
 
     // ============================================================
+    // OBSESSÃO DO MOMENTO (álbum em destaque no perfil por 7 dias)
+    // Escolher de novo — o mesmo álbum ou outro — recomeça a contagem.
+    // ============================================================
+    @PutMapping("/me/obsession")
+    @Transactional
+    public ResponseEntity<?> setObsession(@RequestBody ObsessionRequest body) {
+        if (body == null || body.albumId() == null) {
+            return ResponseEntity.badRequest().body("❌ Escolha um álbum.");
+        }
+        Album album = albumRepository.findById(body.albumId()).orElse(null);
+        if (album == null) {
+            return ResponseEntity.notFound().build();
+        }
+        User user = getAuthenticatedUser();
+        user.setObsessionAlbum(album);
+        user.setObsessionSetAt(LocalDateTime.now());
+        userRepository.save(user);
+        return ResponseEntity.ok(ObsessionDTO.of(user));
+    }
+
+    @DeleteMapping("/me/obsession")
+    @Transactional
+    public ResponseEntity<?> clearObsession() {
+        User user = getAuthenticatedUser();
+        user.setObsessionAlbum(null);
+        user.setObsessionSetAt(null);
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ============================================================
     // DELETAR CONTA
     // ============================================================
     @DeleteMapping("/me")
@@ -270,6 +310,7 @@ public class UserController {
         dto.setFollowingCount(followingCount);
         dto.setFollowingByMe(followingByMe);
         dto.setAvatarUrl(AvatarService.avatarUrl(target));
+        dto.setObsession(ObsessionDTO.of(target));
 
         return ResponseEntity.ok(dto);
     }

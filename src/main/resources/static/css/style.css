@@ -79,6 +79,55 @@ h1, h2, h3, h4, h5, .display-headline {
 }
 .b8-nav-toggler:focus { box-shadow: 0 0 0 2px var(--purple-glow); }
 
+/* ===== Obsessão do momento ===== */
+.obsession-card { padding: 1rem 1.25rem; border-color: rgba(244, 185, 66, 0.35); }
+.obsession-box { display: flex; align-items: center; gap: 1rem; }
+.obsession-cover {
+    width: 84px;
+    height: 84px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: block;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.obsession-cover-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-card-soft);
+    color: var(--purple-2);
+    font-size: 2rem;
+}
+.obsession-info { display: flex; flex-direction: column; min-width: 0; }
+.obsession-label {
+    color: var(--gold);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.obsession-title {
+    color: var(--text-white);
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+.obsession-title:hover { color: var(--purple-2); }
+.obsession-artist { color: var(--text-muted); font-size: 0.9rem; }
+.obsession-empty { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.obsession-empty-icon { font-size: 1.8rem; color: var(--gold); }
+.obsession-option-cover { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+#profile-obsession .obsession-box {
+    padding: 0.6rem 0.9rem 0.6rem 0.6rem;
+    border: 1px solid rgba(244, 185, 66, 0.35);
+    border-radius: 14px;
+    background: rgba(244, 185, 66, 0.06);
+    max-width: 420px;
+}
+#profile-obsession .obsession-cover { width: 60px; height: 60px; border-radius: 10px; }
+#btn-obsession.active { color: var(--gold); border-color: rgba(244, 185, 66, 0.6); }
+
 /* ===== Notificações (sino da navbar) ===== */
 .notif-wrap { position: relative; }
 .notif-btn {

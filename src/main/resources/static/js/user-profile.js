@@ -107,6 +107,16 @@ async function loadProfile() {
         bioEl.classList.toggle('d-none', !profile.bio);
         B8.renderGenreChips(document.getElementById('profile-genres'), profile.favoriteGenres || []);
 
+        // Obsessão do momento (só vem enquanto vale: 7 dias desde a escolha)
+        const obsEl = document.getElementById('profile-obsession');
+        if (profile.obsession) {
+            obsEl.innerHTML = B8.obsessionHtml(profile.obsession,
+                `<span class="text-muted small">Escolhida ${B8.escapeHtml(B8.timeAgo(profile.obsession.setAt))}</span>`);
+            obsEl.classList.remove('d-none');
+        } else {
+            obsEl.classList.add('d-none');
+        }
+
         document.getElementById('stat-followers').innerText = profile.followersCount;
         document.getElementById('stat-following').innerText = profile.followingCount;
         document.getElementById('stat-albums').innerText = profile.albumsCount;

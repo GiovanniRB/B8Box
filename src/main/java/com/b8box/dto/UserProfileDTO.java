@@ -16,6 +16,7 @@ public class UserProfileDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String avatarUrl;
+    private ObsessionDTO obsession;
 
     public UserProfileDTO() {}
 
@@ -29,6 +30,7 @@ public class UserProfileDTO {
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         dto.setAvatarUrl(AvatarService.avatarUrl(user));
+        dto.setObsession(ObsessionDTO.of(user));
         return dto;
     }
 
@@ -46,6 +48,9 @@ public class UserProfileDTO {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public ObsessionDTO getObsession() { return obsession; }
+    public void setObsession(ObsessionDTO obsession) { this.obsession = obsession; }
 
     public List<String> getFavoriteGenres() { return favoriteGenres; }
     public void setFavoriteGenres(List<String> favoriteGenres) { this.favoriteGenres = favoriteGenres; }

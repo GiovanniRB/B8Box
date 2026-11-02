@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-rate-album').addEventListener('click', onRateClick);
     document.getElementById('btn-add-to-playlist').addEventListener('click', openPlaylistPicker);
+    document.getElementById('btn-obsession').addEventListener('click', toggleObsession);
     document.getElementById('save-rating-btn').addEventListener('click', saveRating);
     document.getElementById('delete-rating-btn').addEventListener('click', deleteRating);
 
@@ -98,6 +99,7 @@ async function loadCurrentUser() {
         if (!res.ok) return;
         const user = await res.json();
         currentUserId = user.id;
+        myObsessionAlbumId = user.obsession ? user.obsession.albumId : null;
         document.getElementById('user-name').innerText = user.username || 'Usuário';
     } catch (err) {
         console.error('Erro ao carregar usuário logado:', err);
@@ -146,7 +148,50 @@ async function loadPreview() {
 // ============================================================
 async function loadImportedAlbum() {
     document.getElementById('rating-album-id').value = currentAlbumId;
+    currentUserReady.then(syncObsessionButton);
     await Promise.all([loadAlbum(), loadTracks(), loadRatings()]);
+}
+
+// ============================================================
+// OBSESSÃO DO MOMENTO: destaca este álbum no seu perfil por 7 dias.
+// Só aparece com o álbum já importado (precisa do id local).
+// ============================================================
+let myObsessionAlbumId = null;
+
+function syncObsessionButton() {
+    const btn = document.getElementById('btn-obsession');
+    if (!btn || isPreviewMode || !currentAlbumId) return;
+    const active = Number(myObsessionAlbumId) === Number(currentAlbumId);
+    btn.classList.remove('d-none');
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+    btn.innerHTML = active
+        ? '<i class="bi bi-fire"></i> Sua obsessão do momento'
+        : '<i class="bi bi-fire"></i> Marcar como obsessão';
+    btn.title = active ? 'Clique para tirar do seu perfil' : 'Fica em destaque no seu perfil por 7 dias';
+}
+
+async function toggleObsession() {
+    const btn = document.getElementById('btn-obsession');
+    const active = Number(myObsessionAlbumId) === Number(currentAlbumId);
+    btn.disabled = true;
+    try {
+        const res = active
+            ? await fetch(`${API_BASE}/users/me/obsession`, { method: 'DELETE', headers: authHeaders() })
+            : await fetch(`${API_BASE}/users/me/obsession`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ albumId: currentAlbumId })
+            });
+        if (!res.ok) throw new Error('Falha ao atualizar a obsessão');
+        myObsessionAlbumId = active ? null : currentAlbumId;
+        syncObsessionButton();
+    } catch (err) {
+        console.error(err);
+        alert('Não foi possível atualizar a obsessão agora. Tente de novo.');
+    } finally {
+        btn.disabled = false;
+    }
 }
 
 async function loadAlbum() {
@@ -443,6 +488,7 @@ async function onRateClick() {
             history.replaceState(null, '', `album-detail.html?id=${currentAlbumId}`);
             document.getElementById('btn-add-to-playlist').classList.remove('d-none');
             document.getElementById('rating-album-id').value = currentAlbumId;
+            syncObsessionButton();
         } catch (err) {
             console.error(err);
             alert('Não foi possível importar o álbum: ' + err.message);

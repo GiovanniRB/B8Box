@@ -15,6 +15,7 @@ public class UserPublicProfileDTO {
     private long followingCount;
     private boolean followingByMe;
     private String avatarUrl;
+    private ObsessionDTO obsession;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -48,4 +49,7 @@ public class UserPublicProfileDTO {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public ObsessionDTO getObsession() { return obsession; }
+    public void setObsession(ObsessionDTO obsession) { this.obsession = obsession; }
 }

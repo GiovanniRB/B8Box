@@ -58,6 +58,16 @@ public class User {
     @Column(name = "avatar_updated_at")
     private LocalDateTime avatarUpdatedAt;
 
+    // "Obsessão do momento": álbum em destaque no perfil por 7 dias a partir
+    // de obsession_set_at (ver ObsessionDTO). Vazio = sem obsessão.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "obsession_album_id")
+    @JsonIgnore
+    private Album obsessionAlbum;
+
+    @Column(name = "obsession_set_at")
+    private LocalDateTime obsessionSetAt;
+
     // Construtor vazio (OBRIGATÓRIO para JPA)
     public User() {}
 
@@ -144,5 +154,21 @@ public class User {
 
     public void setAvatarUpdatedAt(LocalDateTime avatarUpdatedAt) {
         this.avatarUpdatedAt = avatarUpdatedAt;
+    }
+
+    public Album getObsessionAlbum() {
+        return obsessionAlbum;
+    }
+
+    public void setObsessionAlbum(Album obsessionAlbum) {
+        this.obsessionAlbum = obsessionAlbum;
+    }
+
+    public LocalDateTime getObsessionSetAt() {
+        return obsessionSetAt;
+    }
+
+    public void setObsessionSetAt(LocalDateTime obsessionSetAt) {
+        this.obsessionSetAt = obsessionSetAt;
     }
 }

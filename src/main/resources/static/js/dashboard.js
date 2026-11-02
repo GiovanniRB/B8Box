@@ -440,8 +440,142 @@ async function submitCreatePlaylist(e) {
 // ============================================================
 // PERFIL: nome + estatísticas do header
 // ============================================================
+// ============================================================
+// OBSESSÃO DO MOMENTO
+// Um álbum fica em destaque no seu perfil por 7 dias. Escolhe-se entre
+// os álbuns que você já avaliou (ou na página de qualquer álbum).
+// ============================================================
+let currentObsession = null;
+
+function renderObsessionCard() {
+    const card = document.getElementById('obsession-card');
+    if (!card) return;
+    if (!currentObsession) {
+        card.innerHTML = `
+            <div class="obsession-empty">
+                <i class="bi bi-fire obsession-empty-icon" aria-hidden="true"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">Obsessão do momento</div>
+                    <div class="text-muted small">Escolha o álbum que você não para de ouvir. Ele fica em destaque no seu perfil por 7 dias.</div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="obsession-choose"><i class="bi bi-plus-lg"></i> Escolher</button>
+            </div>`;
+    } else {
+        const days = B8.obsessionDaysLeft(currentObsession);
+        const left = days === 1 ? 'Em destaque até amanhã' : `Em destaque por mais ${days} dias`;
+        card.innerHTML = B8.obsessionHtml(currentObsession, `
+            <span class="text-muted small">${left}</span>
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+                <button type="button" class="btn-pill-outline btn-sm" id="obsession-choose"><i class="bi bi-arrow-repeat"></i> Trocar</button>
+                <button type="button" class="btn-pill-outline btn-sm" id="obsession-clear"><i class="bi bi-x-lg"></i> Remover</button>
+            </div>`);
+        document.getElementById('obsession-clear').addEventListener('click', clearObsession);
+    }
+    document.getElementById('obsession-choose').addEventListener('click', openObsessionPicker);
+}
+
+async function clearObsession() {
+    if (!confirm('Tirar a obsessão do momento do seu perfil?')) return;
+    try {
+        const res = await fetch(`${API_BASE}/users/me/obsession`, { method: 'DELETE', headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao remover');
+        currentObsession = null;
+        renderObsessionCard();
+    } catch (err) {
+        console.error(err);
+        alert('Não foi possível remover agora. Tente de novo.');
+    }
+}
+
+function ensureObsessionModal() {
+    if (document.getElementById('obsessionModal')) return;
+    document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal fade" id="obsessionModal" tabindex="-1" aria-labelledby="obsessionModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="obsessionModalLabel"><i class="bi bi-fire"></i> Escolher obsessão do momento</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" class="form-control mb-3" id="obsession-filter" placeholder="Filtrar seus álbuns..." aria-label="Filtrar seus álbuns">
+                        <div class="list-group" id="obsession-options"></div>
+                        <p class="text-muted small mt-3 mb-0">Quer um álbum que ainda não avaliou? Abra a página dele e use "Marcar como obsessão".</p>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    document.getElementById('obsession-filter').addEventListener('input', renderObsessionOptions);
+    document.getElementById('obsession-options').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-album-id]');
+        if (btn) chooseObsession(Number(btn.dataset.albumId), btn);
+    });
+}
+
+let obsessionChoices = [];
+
+function renderObsessionOptions() {
+    const box = document.getElementById('obsession-options');
+    const q = document.getElementById('obsession-filter').value.trim().toLowerCase();
+    const list = obsessionChoices.filter(a =>
+        !q || (a.title || '').toLowerCase().includes(q) || (a.artist || '').toLowerCase().includes(q));
+    if (!obsessionChoices.length) {
+        box.innerHTML = '<div class="text-muted small">Você ainda não avaliou nenhum álbum. Busque um álbum acima ou abra a página dele.</div>';
+        return;
+    }
+    if (!list.length) {
+        box.innerHTML = '<div class="text-muted small">Nenhum álbum encontrado com esse filtro.</div>';
+        return;
+    }
+    box.innerHTML = list.map(a => `
+        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-3" data-album-id="${Number(a.id)}">
+            <img src="${escapeHtml(a.coverUrl || '/images/cover-placeholder.svg')}" alt="" class="obsession-option-cover">
+            <span class="text-start">
+                <span class="d-block fw-semibold">${escapeHtml(a.title)}</span>
+                <span class="d-block text-muted small">${escapeHtml(a.artist)}</span>
+            </span>
+        </button>`).join('');
+}
+
+async function openObsessionPicker() {
+    ensureObsessionModal();
+    document.getElementById('obsession-filter').value = '';
+    document.getElementById('obsession-options').innerHTML = '<div class="text-muted small">Carregando seus álbuns...</div>';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('obsessionModal')).show();
+    try {
+        const res = await fetch(`${API_BASE}/albums/me`, { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar álbuns');
+        obsessionChoices = await res.json();
+        renderObsessionOptions();
+    } catch (err) {
+        console.error(err);
+        document.getElementById('obsession-options').innerHTML = '<div class="text-muted small">Não foi possível carregar seus álbuns agora.</div>';
+    }
+}
+
+async function chooseObsession(albumId, btn) {
+    btn.disabled = true;
+    try {
+        const res = await fetch(`${API_BASE}/users/me/obsession`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ albumId })
+        });
+        if (!res.ok) throw new Error('Falha ao escolher');
+        currentObsession = await res.json();
+        renderObsessionCard();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('obsessionModal')).hide();
+    } catch (err) {
+        console.error(err);
+        alert('Não foi possível escolher esse álbum agora. Tente de novo.');
+        btn.disabled = false;
+    }
+}
+
 async function loadProfileHeader() {
     const me = await meReady;
+    currentObsession = me ? me.obsession || null : null;
+    renderObsessionCard();
     const nameEl = document.getElementById('user-card-name');
     if (nameEl && me && me.username) nameEl.textContent = me.username;
 
