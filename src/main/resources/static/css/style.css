@@ -562,6 +562,44 @@ h1, h2, h3, h4, h5, .display-headline {
     font-size: 0.85rem;
 }
 
+/* ===== Comentários em avaliações ===== */
+.review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.comment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-pill);
+    color: var(--text-muted);
+    padding: 0.2rem 0.75rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.comment-btn:hover,
+.comment-btn[aria-expanded="true"] { color: var(--text-white); border-color: var(--purple-2); }
+.comment-btn:focus-visible { outline: 2px solid var(--purple-2); outline-offset: 2px; }
+.comments-panel {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-soft);
+}
+.comment-list { list-style: none; padding: 0; margin: 0 0 0.5rem; }
+.comment-item { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.45rem 0; }
+.comment-body { flex: 1; min-width: 0; }
+.comment-text { font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-delete {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    padding: 0.15rem 0.35rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.comment-delete:hover { color: #f87171; }
+.comment-form textarea { resize: vertical; }
+
 /* ===== Feed e avaliações de perfil ===== */
 .feed-item { display: flex; flex-direction: row; gap: 1rem; padding: 1.1rem; }
 .feed-item .feed-cover {

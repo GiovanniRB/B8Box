@@ -188,6 +188,7 @@
         }
 
         B8.bindLikeButtons(reviewsEl, headers);
+        B8.bindCommentButtons(reviewsEl, headers);
         loadPopularAlbums();
         meReady = loadMe().then(me => {
             myId = me && me.id != null ? me.id : null;
@@ -197,10 +198,10 @@
         document.getElementById('hero-register-btn').addEventListener('click', () => openLogin(true));
         document.getElementById('hero-login-btn').addEventListener('click', () => openLogin(false));
 
-        // Visitante: álbum, perfil, playlist e curtir ainda exigem conta.
+        // Visitante: álbum, perfil, playlist, curtir e comentar ainda exigem conta.
         // Em vez de mandar para uma página que devolveria para cá, abre o login.
         contentEl.addEventListener('click', (e) => {
-            const target = e.target.closest('a[href], .like-btn');
+            const target = e.target.closest('a[href], .like-btn, .comment-btn');
             if (!target || !contentEl.contains(target)) return;
             e.preventDefault();
             openLogin(false);

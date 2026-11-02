@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadRatings();
     loadPlaylists();
     B8.bindLikeButtons(document.getElementById('ratings-list'), authHeaders);
+    B8.bindCommentButtons(document.getElementById('ratings-list'), authHeaders);
     await profileDone;
 
     // vindo do dashboard (?list=followers|following): já abre a lista

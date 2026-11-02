@@ -9,6 +9,7 @@ public class RatingResponseDTO {
     private String createdAt;
     private long likesCount;
     private boolean likedByMe;
+    private long commentsCount;
     private String avatarUrl;
 
     public String getAvatarUrl() { return avatarUrl; }
@@ -87,5 +88,13 @@ public class RatingResponseDTO {
 
     public void setLikedByMe(boolean likedByMe) {
         this.likedByMe = likedByMe;
+    }
+
+    public long getCommentsCount() {
+        return commentsCount;
+    }
+
+    public void setCommentsCount(long commentsCount) {
+        this.commentsCount = commentsCount;
     }
 }

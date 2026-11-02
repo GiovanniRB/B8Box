@@ -125,6 +125,171 @@
     }
 
     // ------------------------------------------------------------
+    // COMENTÁRIOS EM AVALIAÇÕES
+    // O botão fica na linha .review-actions (junto do curtir); clicar abre,
+    // logo abaixo dessa linha, um painel com os comentários e o campo de
+    // resposta. Um único ouvinte por container, como nas curtidas.
+    // ------------------------------------------------------------
+    const COMMENT_MAX = 500;
+
+    function commentButtonHtml(ratingId, commentsCount) {
+        const count = Number(commentsCount) || 0;
+        return `
+            <button type="button" class="comment-btn" data-rating-id="${Number(ratingId)}"
+                    aria-expanded="false" title="Comentários">
+                <i class="bi bi-chat" aria-hidden="true"></i>
+                <span class="comment-count">${count}</span>
+                <span class="visually-hidden">Ver comentários</span>
+            </button>`;
+    }
+
+    function commentItemHtml(c) {
+        const profileUrl = `user-profile.html?id=${Number(c.userId)}`;
+        const del = c.canDelete
+            ? `<button type="button" class="comment-delete" title="Apagar comentário" aria-label="Apagar comentário">
+                   <i class="bi bi-trash" aria-hidden="true"></i>
+               </button>`
+            : '';
+        return `
+            <li class="comment-item" data-comment-id="${Number(c.id)}">
+                <a href="${profileUrl}" class="flex-shrink-0">${avatarHtml(c.avatarUrl, c.username, 'b8-avatar-xs')}</a>
+                <div class="comment-body">
+                    <div class="small">
+                        <a href="${profileUrl}" class="fw-semibold text-white text-decoration-none">@${escapeHtml(c.username)}</a>
+                        <span class="text-muted">${escapeHtml(timeAgo(c.createdAt))}</span>
+                    </div>
+                    <p class="comment-text mb-0">${escapeHtml(c.text)}</p>
+                </div>
+                ${del}
+            </li>`;
+    }
+
+    function renderCommentsPanel(panel, comments) {
+        panel.innerHTML = `
+            <ul class="comment-list">${comments.map(commentItemHtml).join('')}</ul>
+            <p class="comments-empty text-muted small mb-2 ${comments.length ? 'd-none' : ''}">Ninguém comentou ainda. Seja a primeira pessoa!</p>
+            <form class="comment-form">
+                <textarea class="form-control form-control-sm" rows="2" maxlength="${COMMENT_MAX}"
+                          placeholder="Escreva um comentário..." aria-label="Escreva um comentário"></textarea>
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                    <span class="comment-chars small text-muted">0/${COMMENT_MAX}</span>
+                    <button type="submit" class="btn btn-sm btn-primary">Comentar</button>
+                </div>
+            </form>`;
+    }
+
+    // Atualiza o número do botão 💬 que abriu o painel
+    function bumpCommentCount(panel, delta) {
+        const row = panel.previousElementSibling;
+        const count = row && row.querySelector('.comment-count');
+        if (count) count.textContent = Math.max(0, (Number(count.textContent) || 0) + delta);
+    }
+
+    async function toggleComments(btn, headers) {
+        const row = btn.closest('.review-actions');
+        if (!row) return;
+        const open = row.nextElementSibling;
+        if (open && open.classList.contains('comments-panel')) {
+            open.remove();
+            btn.setAttribute('aria-expanded', 'false');
+            return;
+        }
+        const panel = document.createElement('div');
+        panel.className = 'comments-panel';
+        panel.dataset.ratingId = btn.dataset.ratingId;
+        panel.innerHTML = '<div class="text-muted small py-2">Carregando comentários...</div>';
+        row.insertAdjacentElement('afterend', panel);
+        btn.setAttribute('aria-expanded', 'true');
+        try {
+            const res = await fetch(`/api/ratings/${Number(btn.dataset.ratingId)}/comments`, { headers });
+            if (!res.ok) throw new Error('Falha ao carregar comentários');
+            renderCommentsPanel(panel, await res.json());
+            const count = btn.querySelector('.comment-count');
+            if (count) count.textContent = panel.querySelectorAll('.comment-item').length;
+        } catch (err) {
+            console.error(err);
+            panel.innerHTML = '<div class="text-muted small py-2">Não foi possível carregar os comentários agora.</div>';
+        }
+    }
+
+    async function submitComment(form, headers) {
+        const panel = form.closest('.comments-panel');
+        const textarea = form.querySelector('textarea');
+        const submit = form.querySelector('button[type="submit"]');
+        const text = textarea.value.trim();
+        if (!text) {
+            textarea.focus();
+            return;
+        }
+        submit.disabled = true;
+        try {
+            const res = await fetch(`/api/ratings/${Number(panel.dataset.ratingId)}/comments`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ text })
+            });
+            if (!res.ok) {
+                const msg = await res.text();
+                throw new Error(msg || 'Falha ao comentar');
+            }
+            const comment = await res.json();
+            panel.querySelector('.comment-list').insertAdjacentHTML('beforeend', commentItemHtml(comment));
+            panel.querySelector('.comments-empty').classList.add('d-none');
+            textarea.value = '';
+            panel.querySelector('.comment-chars').textContent = `0/${COMMENT_MAX}`;
+            bumpCommentCount(panel, 1);
+        } catch (err) {
+            console.error(err);
+            alert(err.message && err.message.startsWith('❌') ? err.message : 'Não foi possível comentar agora. Tente de novo.');
+        } finally {
+            submit.disabled = false;
+        }
+    }
+
+    async function deleteComment(btn, headers) {
+        const item = btn.closest('.comment-item');
+        const panel = btn.closest('.comments-panel');
+        if (!confirm('Apagar este comentário?')) return;
+        btn.disabled = true;
+        try {
+            const res = await fetch(`/api/ratings/comments/${Number(item.dataset.commentId)}`, { method: 'DELETE', headers });
+            if (!res.ok && res.status !== 404) throw new Error('Falha ao apagar');
+            item.remove();
+            bumpCommentCount(panel, -1);
+            if (!panel.querySelector('.comment-item')) panel.querySelector('.comments-empty').classList.remove('d-none');
+        } catch (err) {
+            console.error(err);
+            alert('Não foi possível apagar o comentário agora. Tente de novo.');
+            btn.disabled = false;
+        }
+    }
+
+    function bindCommentButtons(container, getHeaders) {
+        if (!container || container.dataset.commentsBound) return;
+        container.dataset.commentsBound = '1';
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('.comment-btn');
+            if (btn && container.contains(btn)) {
+                toggleComments(btn, getHeaders());
+                return;
+            }
+            const del = e.target.closest('.comment-delete');
+            if (del && container.contains(del) && !del.disabled) deleteComment(del, getHeaders());
+        });
+        container.addEventListener('submit', (e) => {
+            const form = e.target.closest('.comment-form');
+            if (!form) return;
+            e.preventDefault();
+            submitComment(form, getHeaders());
+        });
+        container.addEventListener('input', (e) => {
+            if (!e.target.matches('.comment-form textarea')) return;
+            const chars = e.target.closest('.comment-form').querySelector('.comment-chars');
+            chars.textContent = `${e.target.value.length}/${COMMENT_MAX}`;
+        });
+    }
+
+    // ------------------------------------------------------------
     // AVATAR (foto de perfil ou, sem foto, a inicial do username)
     // url = avatarUrl que vem da API (já é um caminho nosso, /api/public/...)
     // size = classe extra de tamanho: b8-avatar-xs, b8-avatar-sm, b8-avatar-fill
@@ -225,7 +390,7 @@
                     <div class="text-muted small mb-1">${escapeHtml(sub.join(' · '))}</div>
                     <span class="star-rating">★ ${escapeHtml(it.score)}</span>
                     ${it.review ? `<p class="feed-review mb-0 mt-2">${escapeHtml(it.review)}</p>` : ''}
-                    <div class="mt-2">${likes}</div>
+                    <div class="review-actions mt-2">${likes}${commentButtonHtml(it.ratingId, it.commentsCount)}</div>
                 </div>
             </article>`;
     }
@@ -341,6 +506,8 @@
         likeButtonHtml,
         likeCountHtml,
         bindLikeButtons,
+        commentButtonHtml,
+        bindCommentButtons,
         renderFeedItem,
         avatarHtml,
         playlistCoverHtml,

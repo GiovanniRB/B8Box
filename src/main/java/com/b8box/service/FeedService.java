@@ -56,6 +56,9 @@ public class FeedService {
     @Autowired
     private LikeService likeService;
 
+    @Autowired
+    private CommentService commentService;
+
     /**
      * Feed de quem o usuário segue: avaliações de álbuns + playlists públicas,
      * do mais recente para o mais antigo, no máximo FEED_LIMIT itens.
@@ -168,18 +171,20 @@ public class FeedService {
         return LocalDateTime.now().minusDays(POPULAR_DAYS);
     }
 
-    // Converte avaliações em itens já com as curtidas, usando duas consultas
-    // no total (em vez de duas por avaliação). meId null = visitante.
+    // Converte avaliações em itens já com curtidas e comentários, usando três
+    // consultas no total (em vez de três por avaliação). meId null = visitante.
     private List<FeedItemDTO> toRatingItems(List<Rating> ratings, Long meId) {
         List<Long> ids = ratings.stream().map(Rating::getId).collect(Collectors.toList());
         Map<Long, Long> counts = likeService.countFor(ids);
         Set<Long> liked = meId != null ? likeService.likedBy(meId, ids) : Set.of();
+        Map<Long, Long> comments = commentService.countFor(ids);
 
         List<FeedItemDTO> items = new ArrayList<>();
         for (Rating r : ratings) {
             FeedItemDTO dto = FeedItemDTO.fromRating(r);
             dto.setLikesCount(counts.getOrDefault(r.getId(), 0L));
             dto.setLikedByMe(liked.contains(r.getId()));
+            dto.setCommentsCount(comments.getOrDefault(r.getId(), 0L));
             items.add(dto);
         }
         return items;

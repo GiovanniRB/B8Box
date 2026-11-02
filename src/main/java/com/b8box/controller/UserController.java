@@ -6,6 +6,7 @@ import com.b8box.dto.UserSearchResultDTO;
 import com.b8box.model.User;
 import com.b8box.repository.FollowRepository;
 import com.b8box.repository.PlaylistRepository;
+import com.b8box.repository.RatingCommentRepository;
 import com.b8box.repository.RatingLikeRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
@@ -50,6 +51,9 @@ public class UserController {
 
     @Autowired
     private RatingLikeRepository ratingLikeRepository;
+
+    @Autowired
+    private RatingCommentRepository ratingCommentRepository;
 
     @Autowired
     private AvatarService avatarService;
@@ -203,6 +207,8 @@ public class UserController {
         // Curtidas que a pessoa deu em avaliações de OUTROS usuários (as curtidas
         // recebidas nas avaliações dela somem junto com as avaliações).
         ratingLikeRepository.deleteByUserId(user.getId());
+        // Mesma coisa com os comentários feitos em avaliações de outros.
+        ratingCommentRepository.deleteByUserId(user.getId());
         avatarService.delete(user);
         userRepository.delete(user);
         return ResponseEntity.ok("✅ Conta deletada com sucesso!");

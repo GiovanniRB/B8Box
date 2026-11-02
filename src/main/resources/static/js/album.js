@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Curtidas nas avaliações da comunidade (um ouvinte só para a lista toda)
     B8.bindLikeButtons(document.getElementById('reviews-list'), authHeaders);
+    // Comentários: nas da comunidade e na sua (para ler o que responderam)
+    B8.bindCommentButtons(document.getElementById('reviews-list'), authHeaders);
+    B8.bindCommentButtons(document.getElementById('your-review-section'), authHeaders);
 
     if (isPreviewMode) {
         loadPreview();
@@ -362,7 +365,10 @@ async function loadRatings() {
                     <div class="text-muted mb-1">Sua avaliação</div>
                     <span class="star-rating">★ ${escapeHtml(yourRating.score)}</span>
                     <p class="mb-0 mt-1">${escapeHtml(yourRating.review)}</p>
-                    ${yourRating.likesCount > 0 ? `<div class="mt-2">${B8.likeCountHtml(yourRating.likesCount)}</div>` : ''}
+                    <div class="review-actions mt-2">
+                        ${yourRating.likesCount > 0 ? B8.likeCountHtml(yourRating.likesCount) : ''}
+                        ${B8.commentButtonHtml(yourRating.id, yourRating.commentsCount)}
+                    </div>
                 </div>
             `;
         } else {
@@ -399,7 +405,10 @@ async function loadRatings() {
                         </div>
                     </div>
                     <p class="mb-0 text-muted">${escapeHtml(r.review)}</p>
-                    <div class="mt-2">${B8.likeButtonHtml(r.id, r.likesCount, r.likedByMe)}</div>
+                    <div class="review-actions mt-2">
+                        ${B8.likeButtonHtml(r.id, r.likesCount, r.likedByMe)}
+                        ${B8.commentButtonHtml(r.id, r.commentsCount)}
+                    </div>
                 </div>
             `;
         }).join('');

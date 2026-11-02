@@ -25,6 +25,7 @@ public final class InputValidator {
     public static final int MAX_PASSWORD_BYTES = 72;
     public static final int MAX_REVIEW_LENGTH = 5000;
     public static final int MAX_BIO_LENGTH = 300;
+    public static final int MAX_COMMENT_LENGTH = 500;
     public static final int MAX_GENRES = 5;
     public static final int MAX_GENRE_LENGTH = 30;
 
@@ -66,6 +67,16 @@ public final class InputValidator {
         }
         if (review != null && review.length() > MAX_REVIEW_LENGTH) {
             return "❌ A resenha pode ter no máximo " + MAX_REVIEW_LENGTH + " caracteres.";
+        }
+        return null;
+    }
+
+    public static String validateComment(String text) {
+        if (text == null || text.isBlank()) {
+            return "❌ Escreva alguma coisa antes de enviar.";
+        }
+        if (text.length() > MAX_COMMENT_LENGTH) {
+            return "❌ O comentário pode ter no máximo " + MAX_COMMENT_LENGTH + " caracteres.";
         }
         return null;
     }

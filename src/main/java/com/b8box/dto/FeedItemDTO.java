@@ -29,6 +29,7 @@ public class FeedItemDTO {
     private String review;
     private long likesCount;
     private boolean likedByMe;
+    private long commentsCount;
 
     // álbum avaliado
     private Long albumId;
@@ -94,6 +95,8 @@ public class FeedItemDTO {
     public void setLikesCount(long likesCount) { this.likesCount = likesCount; }
     public boolean isLikedByMe() { return likedByMe; }
     public void setLikedByMe(boolean likedByMe) { this.likedByMe = likedByMe; }
+    public long getCommentsCount() { return commentsCount; }
+    public void setCommentsCount(long commentsCount) { this.commentsCount = commentsCount; }
     public Long getAlbumId() { return albumId; }
     public String getAlbumTitle() { return albumTitle; }
     public String getAlbumArtist() { return albumArtist; }

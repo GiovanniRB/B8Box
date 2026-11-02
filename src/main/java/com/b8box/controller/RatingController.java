@@ -10,6 +10,7 @@ import com.b8box.repository.MusicRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
 import com.b8box.service.AvatarService;
+import com.b8box.service.CommentService;
 import com.b8box.service.LikeService;
 import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,9 @@ public class RatingController {
     @Autowired
     private LikeService likeService;
 
+    @Autowired
+    private CommentService commentService;
+
     // ============================================================
     // LISTAR AVALIAÇÕES DO USUÁRIO LOGADO
     // ============================================================
@@ -66,16 +70,18 @@ public class RatingController {
         User me = getAuthenticatedUser();
         List<Rating> ratings = ratingRepository.findByAlbumId(albumId);
 
-        // curtidas de todas as avaliações do álbum em duas consultas
+        // curtidas e comentários de todas as avaliações do álbum em três consultas
         List<Long> ids = ratings.stream().map(Rating::getId).collect(Collectors.toList());
         Map<Long, Long> counts = likeService.countFor(ids);
         Set<Long> liked = likeService.likedBy(me.getId(), ids);
+        Map<Long, Long> comments = commentService.countFor(ids);
 
         return ratings.stream()
                 .map(r -> {
                     RatingResponseDTO dto = toDto(r);
                     dto.setLikesCount(counts.getOrDefault(r.getId(), 0L));
                     dto.setLikedByMe(liked.contains(r.getId()));
+                    dto.setCommentsCount(comments.getOrDefault(r.getId(), 0L));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -239,6 +245,47 @@ public class RatingController {
         }
         likeService.unlike(user.getId(), id);
         return ResponseEntity.ok(likeService.status(id, user.getId()));
+    }
+
+    // ============================================================
+    // COMENTÁRIOS (respostas) DE UMA AVALIAÇÃO
+    // ============================================================
+    public record CommentRequest(String text) {}
+
+    @GetMapping("/{id}/comments")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> listComments(@PathVariable Long id) {
+        if (!ratingRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(commentService.list(id, getAuthenticatedUser()));
+    }
+
+    @PostMapping("/{id}/comments")
+    @Transactional
+    public ResponseEntity<?> addComment(@PathVariable Long id, @RequestBody CommentRequest body) {
+        User user = getAuthenticatedUser();
+        Rating rating = ratingRepository.findById(id).orElse(null);
+        if (rating == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String text = body == null || body.text() == null ? null : body.text().trim();
+        String error = InputValidator.validateComment(text);
+        if (error != null) {
+            return ResponseEntity.badRequest().body(error);
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(commentService.add(user, rating, text));
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    @Transactional
+    public ResponseEntity<?> deleteComment(@PathVariable Long commentId) {
+        try {
+            boolean deleted = commentService.delete(commentId, getAuthenticatedUser());
+            return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        }
     }
 
     // ============================================================
