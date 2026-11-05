@@ -1,6 +1,7 @@
 package com.b8box.service;
 
 import com.b8box.model.Album;
+import com.b8box.model.ForumReply;
 import com.b8box.model.Notification;
 import com.b8box.model.Notification.Type;
 import com.b8box.model.Rating;
@@ -82,6 +83,45 @@ public class NotificationService {
         notificationRepository.deleteByCommentId(commentId);
     }
 
+    /** Avisa o autor da mensagem respondida e quem abriu a discussão, uma vez cada. */
+    @Transactional
+    public void onForumReply(User actor, ForumReply reply) {
+        Map<Long, User> recipients = new LinkedHashMap<>();
+        User threadAuthor = reply.getThread().getAuthor();
+        if (reply.getParent() != null && reply.getParent().getAuthor() != null) {
+            recipients.put(reply.getParent().getAuthor().getId(), reply.getParent().getAuthor());
+        }
+        if (threadAuthor != null) {
+            recipients.put(threadAuthor.getId(), threadAuthor);
+        }
+        recipients.remove(actor.getId());
+
+        String text = reply.getText();
+        String preview = text.length() > PREVIEW_LENGTH ? text.substring(0, PREVIEW_LENGTH - 1) + "…" : text;
+        for (User recipient : recipients.values()) {
+            Notification n = new Notification(recipient, actor, Type.REPLY, null);
+            n.setThreadId(reply.getThread().getId());
+            n.setReplyId(reply.getId());
+            n.setPreview(preview);
+            notificationRepository.save(n);
+        }
+    }
+
+    @Transactional
+    public void onForumReplyDeleted(Long replyId) {
+        notificationRepository.deleteByReplyId(replyId);
+    }
+
+    @Transactional
+    public void onForumThreadDeleted(Long threadId) {
+        notificationRepository.deleteByThreadId(threadId);
+    }
+
+    @Transactional
+    public void onCommunityDeleted(Long communityId) {
+        notificationRepository.deleteByCommunityId(communityId);
+    }
+
     @Transactional
     public void deleteAllFor(Long userId) {
         notificationRepository.deleteByRecipientIdOrActorId(userId, userId);
@@ -113,6 +153,8 @@ public class NotificationService {
         m.put("actorUsername", n.getActor().getUsername());
         m.put("actorAvatarUrl", AvatarService.avatarUrl(n.getActor()));
         m.put("preview", n.getPreview());
+        m.put("threadId", n.getThreadId());
+        m.put("replyId", n.getReplyId());
         Rating r = n.getRating();
         Album album = r != null ? r.getAlbum() : null;
         m.put("ratingId", r != null ? r.getId() : null);

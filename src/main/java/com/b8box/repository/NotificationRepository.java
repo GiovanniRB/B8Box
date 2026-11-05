@@ -29,6 +29,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     void deleteByActorIdAndRecipientIdAndType(Long actorId, Long recipientId, Notification.Type type);
     void deleteByActorIdAndRatingIdAndType(Long actorId, Long ratingId, Notification.Type type);
     void deleteByCommentId(Long commentId);
+    void deleteByReplyId(Long replyId);
+    void deleteByThreadId(Long threadId);
+
+    @Modifying
+    @Query("delete from Notification n where n.threadId in " +
+           "(select t.id from ForumThread t where t.community.id = :communityId)")
+    void deleteByCommunityId(@Param("communityId") Long communityId);
 
     // Usado ao apagar uma conta: avisos que a pessoa recebeu ou gerou
     void deleteByRecipientIdOrActorId(Long recipientId, Long actorId);

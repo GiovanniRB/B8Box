@@ -14,6 +14,8 @@ import com.b8box.repository.RatingLikeRepository;
 import com.b8box.repository.RatingRepository;
 import com.b8box.repository.UserRepository;
 import com.b8box.service.AvatarService;
+import com.b8box.service.CommunityService;
+import com.b8box.service.ForumService;
 import com.b8box.service.NotificationService;
 import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +69,12 @@ public class UserController {
 
     @Autowired
     private AlbumRepository albumRepository;
+
+    @Autowired
+    private CommunityService communityService;
+
+    @Autowired
+    private ForumService forumService;
 
     // Corpo do PUT /api/users/me. Campos nulos = "não alterar" (assim um
     // cliente que só manda o username continua funcionando).
@@ -256,6 +264,10 @@ public class UserController {
         ratingLikeRepository.deleteByUserId(user.getId());
         // Mesma coisa com os comentários feitos em avaliações de outros.
         ratingCommentRepository.deleteByUserId(user.getId());
+        // Respostas e discussões nos fóruns (ver ForumService).
+        forumService.removeContentOf(user.getId());
+        // Sai das comunidades; as que a pessoa criou continuam existindo.
+        communityService.removeFromAll(user.getId());
         avatarService.delete(user);
         userRepository.delete(user);
         return ResponseEntity.ok("✅ Conta deletada com sucesso!");

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B8Box - Discussão</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg" data-b8-navbar="communities"></nav>
+
+    <main class="forum-page">
+        <a href="/communities.html" class="back-link mb-3 d-inline-flex" id="back-to-community"><i class="bi bi-arrow-left" aria-hidden="true"></i> <span id="back-label">Comunidades</span></a>
+
+        <div class="text-center text-muted py-4" id="thread-status">Carregando...</div>
+
+        <article class="card forum-card mb-4 d-none" id="thread-card"></article>
+
+        <div class="d-none" id="replies-section">
+            <h5 class="mb-3" id="replies-title">Respostas</h5>
+            <div class="mb-4" id="reply-compose"></div>
+            <div id="reply-tree"></div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/thread.js"></script>
+</body>
+</html>

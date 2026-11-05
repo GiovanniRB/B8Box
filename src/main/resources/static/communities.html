@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B8Box - Comunidades</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg" data-b8-navbar="communities"></nav>
+
+    <main class="forum-page">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">Comunidades</h2>
+                <p class="text-muted mb-0">Encontre quem ouve o mesmo que você e abra a discussão.</p>
+            </div>
+            <button type="button" class="btn btn-primary d-none" id="btn-new-community"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nova comunidade</button>
+            <a href="/" class="btn btn-primary d-none" id="btn-login-to-create">Entre para criar</a>
+        </div>
+
+        <div class="forum-filters mb-4" id="community-filters" role="group" aria-label="Filtrar por categoria">
+            <button type="button" class="forum-filter active" data-category="" aria-pressed="true">Todas</button>
+            <button type="button" class="forum-filter" data-category="GENRE" aria-pressed="false">Gêneros</button>
+            <button type="button" class="forum-filter" data-category="DECADE" aria-pressed="false">Décadas</button>
+            <button type="button" class="forum-filter" data-category="ARTIST" aria-pressed="false">Artistas</button>
+        </div>
+
+        <div class="row g-3" id="community-list">
+            <div class="col-12 text-center text-muted py-4">Carregando...</div>
+        </div>
+    </main>
+
+    <!-- NOVA COMUNIDADE -->
+    <div class="modal fade" id="communityModal" tabindex="-1" aria-labelledby="communityModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" id="community-form">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="communityModalLabel">Nova comunidade</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="community-name">Nome</label>
+                        <input type="text" class="form-control" id="community-name" minlength="3" maxlength="60" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="community-category">Categoria</label>
+                        <select class="form-control" id="community-category" required>
+                            <option value="GENRE">Gênero</option>
+                            <option value="DECADE">Década</option>
+                            <option value="ARTIST">Artista</option>
+                        </select>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label" for="community-description">Descrição (opcional)</label>
+                        <textarea class="form-control" id="community-description" rows="3" maxlength="300"></textarea>
+                    </div>
+                    <p class="text-danger small mt-2 mb-0 d-none" id="community-error" role="alert"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/communities.js"></script>
+</body>
+</html>

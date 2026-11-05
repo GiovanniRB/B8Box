@@ -66,6 +66,9 @@ public class SecurityConfig {
                 // 🔓 Home pública: só leitura (GET), sem login
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
 
+                // 🔓 Comunidades e fóruns: visitante pode ler, participar exige login
+                .requestMatchers(HttpMethod.GET, "/api/communities/**").permitAll()
+
                 // 🔒 Qualquer outra requisição de API exige autenticação
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll() // Permite qualquer outra coisa (importante para o Spring Boot servir o front)

@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 // FOLLOW  - passou a seguir você
 // LIKE    - curtiu a sua avaliação
 // COMMENT - comentou na sua avaliação
-// REPLY   - o dono da avaliação respondeu onde você tinha comentado
+// REPLY   - o dono da avaliação respondeu onde você tinha comentado, ou
+//           alguém respondeu você em uma discussão (aí thread_id vem preenchido)
 @Entity
 @Table(name = "notifications", indexes = @Index(name = "idx_notifications_recipient", columnList = "recipient_id"))
 public class Notification {
@@ -45,6 +46,13 @@ public class Notification {
     // estrangeira: apagar o comentário apaga o aviso pelo serviço.
     @Column(name = "comment_id")
     private Long commentId;
+
+    // Discussão e resposta do fórum que geraram o aviso. Só os ids, pelo mesmo motivo.
+    @Column(name = "thread_id")
+    private Long threadId;
+
+    @Column(name = "reply_id")
+    private Long replyId;
 
     // Começo do comentário, para mostrar na lista sem buscar o comentário
     @Column(length = 140)
@@ -83,6 +91,12 @@ public class Notification {
 
     public Long getCommentId() { return commentId; }
     public void setCommentId(Long commentId) { this.commentId = commentId; }
+
+    public Long getThreadId() { return threadId; }
+    public void setThreadId(Long threadId) { this.threadId = threadId; }
+
+    public Long getReplyId() { return replyId; }
+    public void setReplyId(Long replyId) { this.replyId = replyId; }
 
     public String getPreview() { return preview; }
     public void setPreview(String preview) { this.preview = preview; }

@@ -501,9 +501,12 @@
             case 'REPLY':   text = `${who} respondeu na avaliação de ${album} que você comentou`; break;
             default:        text = who;
         }
-        const href = n.type !== 'FOLLOW' && n.albumId != null
-            ? `/album-detail.html?id=${Number(n.albumId)}`
-            : `/user-profile.html?id=${Number(n.actorId)}`;
+        if (n.threadId != null) text = `${who} respondeu você em uma discussão`;
+        const href = n.threadId != null
+            ? `/thread.html?id=${Number(n.threadId)}#reply-${Number(n.replyId)}`
+            : n.type !== 'FOLLOW' && n.albumId != null
+                ? `/album-detail.html?id=${Number(n.albumId)}`
+                : `/user-profile.html?id=${Number(n.actorId)}`;
         return `
             <a href="${href}" class="notif-item ${n.read ? '' : 'unread'}">
                 ${avatarHtml(n.actorAvatarUrl, n.actorUsername, 'b8-avatar-sm')}
@@ -610,6 +613,7 @@
             right = `
                 ${link('home', '/', 'Início')}
                 ${link('explore', '/explore.html', 'Explorar')}
+                ${link('communities', '/communities.html', 'Comunidades')}
                 ${link('dashboard', '/dashboard.html', 'Dashboard')}
                 <a href="/profile.html" class="navbar-text text-white text-decoration-none ${active === 'profile' ? 'active' : ''}" title="Configurar perfil">
                     <span id="nav-avatar">${navAvatarHtml(localStorage.getItem(AVATAR_KEY))}</span> <span id="user-name">${escapeHtml(shownName)}</span>
@@ -620,6 +624,7 @@
             // nas outras páginas o link leva para a home)
             right = `
                 ${link('home', '/', 'Início')}
+                ${link('communities', '/communities.html', 'Comunidades')}
                 <a href="/" class="nav-link-ghost" data-b8-login>Explorar</a>
                 <a href="/" class="btn-pill-outline" data-b8-login>Entrar</a>`;
         }
@@ -656,6 +661,35 @@
         });
     }
 
+    // ------------------------------------------------------------
+    // COMUNIDADES E FÓRUNS
+    // ------------------------------------------------------------
+    const COMMUNITY_CATEGORIES = { GENRE: 'Gênero', DECADE: 'Década', ARTIST: 'Artista' };
+
+    function communityCategoryLabel(category) {
+        return COMMUNITY_CATEGORIES[category] || '';
+    }
+
+    // "1 membro", "3 membros"
+    function countLabel(count, singular, plural) {
+        return `${Number(count)} ${Number(count) === 1 ? singular : plural}`;
+    }
+
+    // Visitante pode ler os fóruns: o token só vai quando existe
+    function forumHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return headers;
+    }
+
+    // Mensagem para mostrar a partir de uma resposta de erro da API
+    async function forumErrorMessage(res) {
+        if (res.status === 401) return 'Sua sessão expirou. Entre novamente.';
+        const text = await res.text();
+        return text.startsWith('❌') ? text.replace('❌', '').trim() : 'Não foi possível concluir agora. Tente de novo.';
+    }
+
     window.B8 = {
         escapeHtml,
         timeAgo,
@@ -675,7 +709,11 @@
         isLoggedIn,
         logout,
         updateNavUser,
-        renderNavbar
+        renderNavbar,
+        communityCategoryLabel,
+        countLabel,
+        forumHeaders,
+        forumErrorMessage
     };
 
     // Desenha a navbar já ao carregar o ui.js (ele vem no fim do <body>,
