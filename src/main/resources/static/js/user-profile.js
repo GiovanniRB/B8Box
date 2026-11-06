@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Tudo em paralelo: antes cada pedido esperava o anterior terminar.
     meReady = loadMe();
     const profileDone = loadProfile();
+    B8.loadReputation(document.getElementById('reputation-card'), profileUserId);
     loadRatings();
     loadPlaylists();
     B8.bindLikeButtons(document.getElementById('ratings-list'), authHeaders);

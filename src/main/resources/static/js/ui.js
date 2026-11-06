@@ -690,6 +690,93 @@
         return text.startsWith('❌') ? text.replace('❌', '').trim() : 'Não foi possível concluir agora. Tente de novo.';
     }
 
+    // ------------------------------------------------------------
+    // REPUTAÇÃO (card do dashboard e do perfil público)
+    // ------------------------------------------------------------
+    const BADGE_ICONS = {
+        'first-review': 'bi-pencil-fill',
+        'dedicated-critic': 'bi-journal-text',
+        'explorer': 'bi-compass-fill',
+        'community-favorite': 'bi-heart-fill',
+        'list-curator': 'bi-list-stars',
+        'debater': 'bi-chat-dots-fill',
+        'founder': 'bi-flag-fill',
+        'influential': 'bi-people-fill'
+    };
+
+    function reputationBadgeHtml(badge) {
+        const icon = badge.earned ? (BADGE_ICONS[badge.key] || 'bi-award-fill') : 'bi-lock-fill';
+        const status = badge.earned
+            ? 'Conquistada'
+            : `${Number(badge.progress)}/${Number(badge.goal)}`;
+        return `
+            <li class="reputation-badge ${badge.earned ? 'earned' : ''}">
+                <i class="bi ${icon}" aria-hidden="true"></i>
+                <div>
+                    <div class="reputation-badge-name">${escapeHtml(badge.name)}</div>
+                    <div class="reputation-badge-desc">${escapeHtml(badge.description)}</div>
+                    <div class="reputation-badge-status">${status}</div>
+                </div>
+            </li>`;
+    }
+
+    function reputationProgressHtml(rep) {
+        if (rep.nextLevelAt == null) {
+            return '<p class="reputation-next">Nível máximo alcançado</p>';
+        }
+        const percent = Math.floor(100 * (rep.points - rep.levelStart) / (rep.nextLevelAt - rep.levelStart));
+        const missing = rep.nextLevelAt - rep.points;
+        const verb = missing === 1 ? 'Falta' : 'Faltam';
+        return `
+            <div class="reputation-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                 aria-valuenow="${percent}" aria-label="Progresso até ${escapeHtml(rep.nextLevel)}">
+                <span style="width:${percent}%"></span>
+            </div>
+            <p class="reputation-next">${verb} ${countLabel(missing, 'ponto', 'pontos')} para ${escapeHtml(rep.nextLevel)}</p>`;
+    }
+
+    function reputationHtml(rep) {
+        const earned = rep.badges.filter(b => b.earned).length;
+        const sources = rep.sources.map(s => `
+            <tr>
+                <td>${escapeHtml(s.label)}</td>
+                <td class="text-end text-nowrap">${Number(s.count)} × ${Number(s.pointsEach)}</td>
+                <td class="text-end">${Number(s.points)}</td>
+            </tr>`).join('');
+        return `
+            <div class="reputation-head">
+                <div>
+                    <h5 class="mb-1">Reputação</h5>
+                    <span class="reputation-level"><i class="bi bi-award-fill" aria-hidden="true"></i> ${escapeHtml(rep.level)}</span>
+                </div>
+                <div class="stat-mini text-end">
+                    <span class="num">${Number(rep.points)}</span>
+                    <span class="label">${Number(rep.points) === 1 ? 'ponto' : 'pontos'}</span>
+                </div>
+            </div>
+            ${reputationProgressHtml(rep)}
+            <h6 class="mt-3 mb-2">Badges <span class="text-muted small">${earned} de ${rep.badges.length}</span></h6>
+            <ul class="reputation-badges">${rep.badges.map(reputationBadgeHtml).join('')}</ul>
+            <details class="reputation-details">
+                <summary>Como os pontos são somados</summary>
+                <table class="reputation-table">
+                    <tbody>${sources}</tbody>
+                </table>
+            </details>`;
+    }
+
+    // Carrega à parte: a reputação não segura o resto da tela
+    async function loadReputation(card, userId) {
+        try {
+            const res = await fetch(`/api/users/${encodeURIComponent(userId)}/reputation`, { headers: forumHeaders() });
+            if (!res.ok) throw new Error('Falha ao carregar a reputação');
+            card.innerHTML = reputationHtml(await res.json());
+        } catch (err) {
+            console.error(err);
+            card.innerHTML = '<span class="text-muted small">Não foi possível carregar a reputação.</span>';
+        }
+    }
+
     window.B8 = {
         escapeHtml,
         timeAgo,
@@ -713,7 +800,8 @@
         communityCategoryLabel,
         countLabel,
         forumHeaders,
-        forumErrorMessage
+        forumErrorMessage,
+        loadReputation
     };
 
     // Desenha a navbar já ao carregar o ui.js (ele vem no fim do <body>,

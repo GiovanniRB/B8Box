@@ -902,3 +902,51 @@ select.form-control option { background: var(--bg-card); color: var(--text-white
 @media (max-width: 575.98px) {
     .reply-children { margin-left: 0.15rem; padding-left: 0.6rem; }
 }
+
+/* ============================================================
+   REPUTAÇÃO
+   ============================================================ */
+.reputation-card { padding: 1.25rem; }
+.reputation-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.reputation-level { color: var(--gold); font-weight: 600; }
+.reputation-bar {
+    height: 8px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+    background: var(--bg-card-soft);
+    border-radius: var(--radius-pill);
+}
+.reputation-bar span {
+    display: block;
+    height: 100%;
+    background: var(--purple-1);
+    border-radius: var(--radius-pill);
+}
+.reputation-next { margin: 0.4rem 0 0; color: var(--text-muted); font-size: 0.85rem; }
+.reputation-badges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.reputation-badge {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    color: var(--text-muted);
+}
+.reputation-badge > i { font-size: 1.1rem; }
+.reputation-badge.earned { border-color: rgba(244, 185, 66, 0.35); color: var(--text-white); }
+.reputation-badge.earned > i { color: var(--gold); }
+.reputation-badge-name { font-size: 0.9rem; font-weight: 600; }
+.reputation-badge-desc, .reputation-badge-status { font-size: 0.78rem; color: var(--text-muted); }
+.reputation-badge.earned .reputation-badge-status { color: var(--gold); }
+.reputation-details { margin-top: 0.9rem; font-size: 0.85rem; }
+.reputation-details summary { color: var(--purple-2); cursor: pointer; }
+.reputation-table { width: 100%; max-width: 420px; margin-top: 0.5rem; }
+.reputation-table td { padding: 0.25rem 0.5rem 0.25rem 0; color: var(--text-muted); }
+.reputation-table td:last-child { color: var(--text-white); padding-right: 0; }

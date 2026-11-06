@@ -17,6 +17,7 @@ import com.b8box.service.AvatarService;
 import com.b8box.service.CommunityService;
 import com.b8box.service.ForumService;
 import com.b8box.service.NotificationService;
+import com.b8box.service.ReputationService;
 import com.b8box.util.InputValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -57,6 +58,9 @@ public class UserController {
 
     @Autowired
     private RatingLikeRepository ratingLikeRepository;
+
+    @Autowired
+    private ReputationService reputationService;
 
     @Autowired
     private RatingCommentRepository ratingCommentRepository;
@@ -325,6 +329,17 @@ public class UserController {
         dto.setObsession(ObsessionDTO.of(target));
 
         return ResponseEntity.ok(dto);
+    }
+
+    // ============================================================
+    // REPUTAÇÃO DE UM USUÁRIO (fora do /me, que quase toda tela chama só pelo nome)
+    // ============================================================
+    @GetMapping("/{id}/reputation")
+    public ResponseEntity<?> getReputation(@PathVariable Long id) {
+        if (!userRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(reputationService.calculate(id));
     }
 
     // ============================================================

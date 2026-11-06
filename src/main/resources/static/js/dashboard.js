@@ -665,4 +665,7 @@ function viewPlaylist(playlistId) {
 userName.textContent = (username && !username.includes('@')) ? username : '';
 
 loadProfileHeader();
+meReady.then(me => {
+    if (me) B8.loadReputation(document.getElementById('reputation-card'), me.id);
+});
 loadMyAlbums();
